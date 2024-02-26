@@ -43,8 +43,10 @@ export default async function Home() {
                             <div key={card.id} className="w-full sm:w-1/2 md:w-1/3 lg:w-1/4 px-4 mb-8">
                                 <Link href={card.link} className="block bg-gray-800 shadow-lg rounded-lg overflow-hidden">
                                         <div className="relative h-48 w-full">
-                                            <Image src={card.imageUrl} alt={card.title} layout="fill"/>
-                                            <p>sdsdsdsdsds</p>
+                                            <Image src={card.imageUrl} alt={card.title} layout="fill" priority={false}
+                                                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                            />
+                                            <p>Loading...</p>
                                         </div>
                                         <div className="p-4">
                                             <h5 className="text-lg font-semibold">{card.title}</h5>

@@ -15,6 +15,9 @@ export default async function Profile() {
     if (!user) {
         redirect('/sign-in');
     }
+    else{
+        console.log(user);
+    }
 
     return (
         <div className="bg-gray-800 text-white max-w-4xl mx-auto my-8 p-6 rounded-lg shadow-lg pt-16">
