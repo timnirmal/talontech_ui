@@ -27,6 +27,10 @@ export default async function RootLayout({children,}: Readonly<{ children: React
         data: {session},
     } = await supabase.auth.getSession();
 
+    const {
+        data: {user},
+    } = await supabase.auth.getUser();
+
     return (
         <html lang="en">
         <body>
@@ -40,7 +44,12 @@ export default async function RootLayout({children,}: Readonly<{ children: React
                 {/*<h1 className="mb-12 text-5xl font-bold sm:text-6xl">*/}
                 {/*    Next.js with <span className="font-black text-green-400">Supabase</span>*/}
                 {/*</h1>*/}
-                <AuthProvider accessToken={session?.access_token}>{children}</AuthProvider>
+                <AuthProvider
+                    accessToken={session?.access_token}
+                    user={user}
+                >
+                    {children}
+                </AuthProvider>
             </main>
         </div>
         </body>
