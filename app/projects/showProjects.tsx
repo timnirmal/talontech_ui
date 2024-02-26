@@ -1,89 +1,84 @@
 'use client';
 
 import {AuthContext} from "@/components/AuthProvider";
-import {useContext, useEffect, useState} from "react";
+import {useCallback, useContext, useEffect, useState} from "react";
+import {createClientComponentClient} from "@supabase/auth-helpers-nextjs";
+import {Database} from "@/types/supabase";
+import Link from "next/link";
 
-export default async function ShowProjects({supabase}) {
+export default async function ShowProjects() {
     const {accessToken, user} = useContext(AuthContext);
 
-    // Now you can use the accessToken in your component
-    // console.log(accessToken); // Just an example, remove or replace with actual usage
-
+    const supabase = createClientComponentClient<Database>()
+    const [loading, setLoading] = useState(true)
     const [projects, setProjects] = useState([]);
-    const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // Function to insert data and fetch projects
-    const insertAndFetchProjects = async () => {
-        setLoading(true);
-        setError(null);
+    const getProfile = useCallback(async () => {
+        try {
+            setLoading(true)
 
-        // Step 1: Insert data into 'projects'
-        const {data: insertData, error: insertError} = await supabase
-            .from('projects')
-            .insert([
-                {some_column: 'someValue', other_column: 'otherValue'},
-            ]);
+            // const { data, error, status } = await supabase
+            //     .from('profiles')
+            //     .select(`id, username, email`)
+            //     .eq('id', user?.id)
+            //     .single()
 
-        if (insertError) {
-            setError(insertError.message);
-            setLoading(false);
-            return;
+            const { data, error, status } = await supabase
+                .from('projects')
+                .select()
+                // .select(`id, username, email`)
+                // .eq('id', user?.id)
+                // .single()
+
+            if (error && status !== 406) {
+                throw error
+            }
+
+            if (data) {
+                console.log(data)
+                setProjects(data)
+            }
+        } catch (error) {
+            // alert('Error loading user data!')
+            alert(error.message)
+        } finally {
+            setLoading(false)
         }
+    }, [user, supabase])
 
-        // Optionally, perform some actions with insertData if needed
-
-        // Step 2: Fetch projects after insertion
-        const {data: fetchData, error: fetchError} = await supabase
-            .from('projects')
-            .select();
-
-        if (fetchError) {
-            setError(fetchError.message);
-        } else {
-            setProjects(fetchData);
-        }
-        setLoading(false);
-    };
-
-    // Use useEffect to run the insert-fetch operation when the component mounts
-    // or based on specific dependencies (e.g., re-fetching when a dependency changes)
     useEffect(() => {
-        insertAndFetchProjects();
-    }, []); // Empty dependency array means this runs once on mount
+        getProfile()
+    }, [user, getProfile])
 
-    if (loading) return <p>Loading...</p>;
+    if (loading) return <p>Loading Projects...</p>;
     if (error) return <p>Error: {error}</p>;
 
     return (
         <div>
             <h1>Projects</h1>
-            {projects.map((project, index) => (
-                <div key={index}>
-                    <p>{project.id}: {project.name}</p>
-                </div>
-            ))}
+            {/*<p>{projects}</p>*/}
+            {/*<p>{projects.id}: {projects.email}</p>*/}
+            {/*{projects.map((project, index) => (*/}
+            {/*    <div key={index}>*/}
+            {/*        <p>{project.id}: {project.name}</p>*/}
+            {/*    </div>*/}
+            {/*))}*/}
+            <div className="flex flex-wrap -mx-4">
+                {projects.map((project) => (
+                    <div key={project.id} className="w-full sm:w-1/2 md:w-1/3 lg:w-1/4 p-4">
+                        <Link href={`/projects/${project.id}`} passHref>
+                        <div className="bg-white shadow-md rounded-lg overflow-hidden">
+                            <div className="p-5">
+                                <h5 className="text-lg font-bold mb-2">{project.name}</h5>
+                                <p className="text-gray-700 text-base">{project.description}</p>
+                            </div>
+                        </div>
+                        </Link>
+                    </div>
+                ))}
+            </div>
+
         </div>
     );
-
-    // return (
-    //     <div className="bg-gray-800 text-white max-w-4xl mx-auto my-8 p-6 rounded-lg shadow-lg pt-16">
-    //         <h2 className="text-2xl font-bold mb-6">User Profile</h2>
-    //         <div>
-    //             <span className="font-semibold">Email:</span>
-    //             <code className="bg-gray-700 p-1 ml-2 rounded">{user.email}</code>
-    //         </div>
-    //         <div className="mt-4">
-    //             <span className="font-semibold">Last Signed In:</span>
-    //             <code className="bg-gray-700 p-1 rounded block">{new Date(user.last_sign_in_at).toUTCString()}</code>
-    //             {/*<code className="bg-gray-700 p-1 rounded ml-2">{new Date(user.last_sign_in_at).toUTCString()}</code>*/}
-    //         </div>
-    //         {/*<Link href="/" className="inline-block bg-blue-500 mt-4 py-2 px-4 rounded hover:bg-blue-600 transition-colors duration-200 text-center">*/}
-    //         {/*    Go Home*/}
-    //         {/*</Link>*/}
-    //         <div className="mt-4">
-    //             <SignOut/>
-    //         </div>
-    //     </div>
-    // );
 }

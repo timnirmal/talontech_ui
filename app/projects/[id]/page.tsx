@@ -3,8 +3,10 @@ import {cookies} from "next/headers";
 import ShowProjects from "@/app/projects/showProjects";
 import NewProject from "@/app/projects/addProject";
 import {Database} from "@/types/supabase";
+import NewFiles from "@/app/projects/[id]/addFiles";
+import ChatWindow from "@/app/projects/[id]/chatWindow";
 
-export default async function Projects() {
+export default async function ProjectsView({ params }: { params: { id: string } }) {
     // const supabase = createServerComponentClient({cookies});
     const supabase = createServerComponentClient<Database>({cookies})
 
@@ -14,8 +16,8 @@ export default async function Projects() {
 
     return (
         <div>
-            <ShowProjects/>
-            <NewProject/>
+            <ChatWindow params={params}/>
+            {/*<NewFiles pageId={params.id}/>*/}
         </div>
     )
 }
