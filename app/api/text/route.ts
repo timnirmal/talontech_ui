@@ -1,5 +1,3 @@
-
-
 // export async function post(req, res) {
 //     try {
 //         // Your API logic here
@@ -71,8 +69,7 @@ export async function POST(request: Request, response: Response) {
 
         return Response.json(data)
 
-    }
-    catch (error) {
+    } catch (error) {
         console.log("Error")
     }
 

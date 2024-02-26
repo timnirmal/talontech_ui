@@ -1,5 +1,3 @@
-import Image from "next/image";
-
 export default function Design() {
     return (
         <div className="bg-gray-800 text-white p-4" style={{width: '100%'}}>

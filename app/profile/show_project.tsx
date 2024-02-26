@@ -13,10 +13,10 @@ export default async function ShowProjects() {
         setError(null);
 
         // Step 1: Insert data into 'projects'
-        const { data: insertData, error: insertError } = await supabase
+        const {data: insertData, error: insertError} = await supabase
             .from('projects')
             .insert([
-                { some_column: 'someValue', other_column: 'otherValue' },
+                {some_column: 'someValue', other_column: 'otherValue'},
             ]);
 
         if (insertError) {
@@ -28,7 +28,7 @@ export default async function ShowProjects() {
         // Optionally, perform some actions with insertData if needed
 
         // Step 2: Fetch projects after insertion
-        const { data: fetchData, error: fetchError } = await supabase
+        const {data: fetchData, error: fetchError} = await supabase
             .from('projects')
             .select();
 

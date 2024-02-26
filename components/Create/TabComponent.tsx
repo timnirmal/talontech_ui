@@ -15,11 +15,11 @@ const TabComponent = () => {
     const renderComponent = () => {
         switch (activeTab) {
             case 'Design':
-                return <Design />;
+                return <Design/>;
             case 'Edit':
-                return <Edit />;
+                return <Edit/>;
             case 'History':
-                return <History />;
+                return <History/>;
             default:
                 return null; // Or return a default component
         }
@@ -29,9 +29,18 @@ const TabComponent = () => {
         <div className="border-b-2">
             <div className="flex space-x-4 mb-4">
                 {/* Update the active tab state onClick */}
-                <button className={`px-4 py-2 rounded text-white ${activeTab === 'Design' ? 'bg-blue-600' : 'bg-gray-700'}`} onClick={() => setActiveTab('Design')}>Design</button>
-                <button className={`px-4 py-2 rounded text-white ${activeTab === 'Edit' ? 'bg-blue-600' : 'bg-gray-700'}`} onClick={() => setActiveTab('Edit')}>Edit</button>
-                <button className={`px-4 py-2 rounded text-white ${activeTab === 'History' ? 'bg-blue-600' : 'bg-gray-700'}`} onClick={() => setActiveTab('History')}>History</button>
+                <button
+                    className={`px-4 py-2 rounded text-white ${activeTab === 'Design' ? 'bg-blue-600' : 'bg-gray-700'}`}
+                    onClick={() => setActiveTab('Design')}>Design
+                </button>
+                <button
+                    className={`px-4 py-2 rounded text-white ${activeTab === 'Edit' ? 'bg-blue-600' : 'bg-gray-700'}`}
+                    onClick={() => setActiveTab('Edit')}>Edit
+                </button>
+                <button
+                    className={`px-4 py-2 rounded text-white ${activeTab === 'History' ? 'bg-blue-600' : 'bg-gray-700'}`}
+                    onClick={() => setActiveTab('History')}>History
+                </button>
             </div>
             {/* Render the component based on the active tab */}
             {renderComponent()}

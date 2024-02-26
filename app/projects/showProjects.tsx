@@ -1,15 +1,10 @@
 'use client';
 
-import SignOut from "@/components/SignOut";
 import {AuthContext} from "@/components/AuthProvider";
-import {useContext} from "react";
-import {useEffect, useState} from "react";
-import {supabase} from "@supabase/auth-ui-shared";
-import {createServerComponentClient} from "@supabase/auth-helpers-nextjs";
-import {cookies} from "next/headers";
+import {useContext, useEffect, useState} from "react";
 
-export default async function ShowProjects ({supabase}) {
-    const { accessToken, user } = useContext(AuthContext);
+export default async function ShowProjects({supabase}) {
+    const {accessToken, user} = useContext(AuthContext);
 
     // Now you can use the accessToken in your component
     // console.log(accessToken); // Just an example, remove or replace with actual usage
@@ -24,10 +19,10 @@ export default async function ShowProjects ({supabase}) {
         setError(null);
 
         // Step 1: Insert data into 'projects'
-        const { data: insertData, error: insertError } = await supabase
+        const {data: insertData, error: insertError} = await supabase
             .from('projects')
             .insert([
-                { some_column: 'someValue', other_column: 'otherValue' },
+                {some_column: 'someValue', other_column: 'otherValue'},
             ]);
 
         if (insertError) {
@@ -39,7 +34,7 @@ export default async function ShowProjects ({supabase}) {
         // Optionally, perform some actions with insertData if needed
 
         // Step 2: Fetch projects after insertion
-        const { data: fetchData, error: fetchError } = await supabase
+        const {data: fetchData, error: fetchError} = await supabase
             .from('projects')
             .select();
 

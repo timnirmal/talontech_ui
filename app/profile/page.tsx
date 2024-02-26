@@ -14,8 +14,7 @@ export default async function Profile() {
 
     if (!user) {
         redirect('/sign-in');
-    }
-    else{
+    } else {
         console.log(user);
     }
 
@@ -31,8 +30,9 @@ export default async function Profile() {
                 {/*<code className="bg-gray-700 p-1 rounded block">{new Date(user.last_sign_in_at).toUTCString()}</code>*/}
                 <code className="bg-gray-700 p-1 rounded ml-2">{new Date(user.last_sign_in_at).toUTCString()}</code>
             </div>
-            <Link href="/" className="inline-block bg-blue-500 mt-4 py-2 px-4 rounded hover:bg-blue-600 transition-colors duration-200 text-center">
-                    Go Home
+            <Link href="/"
+                  className="inline-block bg-blue-500 mt-4 py-2 px-4 rounded hover:bg-blue-600 transition-colors duration-200 text-center">
+                Go Home
             </Link>
             <div className="mt-4">
                 <SignOut/>

@@ -82,8 +82,9 @@ const SignUp = () => {
                 </Formik>
                 {errorMsg && <div className="text-red-400 mt-2">{errorMsg}</div>}
                 {successMsg && <div className="text-green-400 mt-2">{successMsg}</div>}
-                <Link href="/sign-in" className="text-sm text-green-400 hover:underline text-center block mt-4">Already have an
-                        account? Sign In.
+                <Link href="/sign-in" className="text-sm text-green-400 hover:underline text-center block mt-4">Already
+                    have an
+                    account? Sign In.
                 </Link>
             </div>
         </div>

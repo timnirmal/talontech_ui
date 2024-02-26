@@ -26,7 +26,7 @@ const AuthProvider = ({accessToken, user, children}) => {
     }, [accessToken, supabase, router]);
 
     return (
-        <AuthContext.Provider value={{accessToken: currentAccessToken, user:user, supabase:supabase}}>
+        <AuthContext.Provider value={{accessToken: currentAccessToken, user: user, supabase: supabase}}>
             {children}
         </AuthContext.Provider>
     );

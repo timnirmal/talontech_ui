@@ -7,7 +7,7 @@ export default async function Projects() {
 
     return (
         <div>
-            <ShowProjects supabase={supabase} />
+            <ShowProjects supabase={supabase}/>
         </div>
     );
 

@@ -8,7 +8,6 @@ import {cookies} from 'next/headers';
 
 import '@/app/globals.css';
 import AuthProvider from "@/components/AuthProvider";
-import NavBar from "@/components/NavBar/NavBar";
 
 const inter = Inter({subsets: ["latin"]});
 

@@ -3,14 +3,12 @@
 // import {cookies} from 'next/headers';
 // import Link from 'next/link';
 import {redirect} from 'next/navigation';
-import Image from 'next/image'
 
 // import SignOut from '@/components/SignOut';
 // import Design from "@/components/Create/Design";
 import TabComponent from "@/components/Create/TabComponent";
 // import EditedImageShow from "@/components/Create/EditedImageShow";
 import React, {useEffect, useRef, useState} from "react";
-
 
 
 export default async function Create() {
@@ -100,7 +98,9 @@ export default async function Create() {
         setLoading(true);
         setError('');
 
-        {console.log(textareaRef)}
+        {
+            console.log(textareaRef)
+        }
         const text = textareaRef.current.value
         const encodedPrompt = encodeURIComponent(text);
         console.log(encodedPrompt);
