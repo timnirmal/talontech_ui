@@ -18,7 +18,9 @@ export async function POST(request: Request, response: Response) {
         // console.log(text)
         const res_1 = await request.text()
         console.log(res_1)  // {"prompt":"Batman"}
-        const prompt = JSON.parse(res_1).prompt
+        const prompt = JSON.parse(res_1).title
+        console.log(prompt)
+
 
 
         const body = {
