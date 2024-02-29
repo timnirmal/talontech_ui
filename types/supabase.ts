@@ -34,33 +34,39 @@ export type Database = {
         Row: {
           created_at: string | null
           description: string | null
+          extension: string | null
           file_id: number
           file_name: string | null
           link: string | null
           project_id: number | null
           title: string | null
+          type: string | null
           updated_at: string | null
           user_id: string | null
         }
         Insert: {
           created_at?: string | null
           description?: string | null
+          extension?: string | null
           file_id?: never
           file_name?: string | null
           link?: string | null
           project_id?: number | null
           title?: string | null
+          type?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
         Update: {
           created_at?: string | null
           description?: string | null
+          extension?: string | null
           file_id?: never
           file_name?: string | null
           link?: string | null
           project_id?: number | null
           title?: string | null
+          type?: string | null
           updated_at?: string | null
           user_id?: string | null
         }

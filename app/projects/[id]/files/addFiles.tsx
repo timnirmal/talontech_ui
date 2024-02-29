@@ -1,8 +1,16 @@
 import {createServerActionClient} from "@supabase/auth-helpers-nextjs";
 import {cookies} from "next/headers";
 import {Database} from "@/types/supabase";
+import AddFilesIcon from "@/app/projects/[id]/chat/addFilesIcon";
+// import {useRef} from "react";
 
-export default function NewFiles({pageId}: { pageId: string }) {
+interface NewFilesProps {
+    pageId: string;
+    mode?: "icon" | "full";
+}
+
+
+export default function NewFiles({pageId, mode = "full"}: NewFilesProps) {
     const addFiles = async (formData: FormData) => {
         "use server";
         const title = String(formData.get("title")) as string | null;
@@ -36,7 +44,6 @@ export default function NewFiles({pageId}: { pageId: string }) {
                 if (a.error) {
                     throw new Error("File not uploaded");
                 } else {
-
                     // project_id, user_id, file_name, description, link, created_at, updated_at
                     const b = await supabase.from("files").insert({
                         project_id: Number(pageId),
@@ -45,6 +52,8 @@ export default function NewFiles({pageId}: { pageId: string }) {
                         title: title,
                         description: description,
                         link: null,
+                        type: file.type,
+                        extension: file.name.split('.').pop(),
                     }).select();
                     console.log("b", b);
                 }
@@ -52,20 +61,31 @@ export default function NewFiles({pageId}: { pageId: string }) {
         }
 
     };
+    //
+    // const fileInputRef = useRef(null);
+    //
+    // const triggerFileInput = () => {
+    //     // Trigger the file input click event
+    //     fileInputRef.current.click();
+    // };
 
-    const demoTweet = async (formData: FormData) => {
-        "use server";
-        const title = String(formData.get("title"));
-        console.log("title", title);
-    };
-
-    return (
-        <form action={addFiles}
-              className="flex flex-col items-center justify-center p-5 rounded-lg bg-gray-100 shadow-md">
-            <input type="file" name="projectFile" className="w-full p-2 rounded-md border border-gray-300 mb-2"/>
-            <button type="submit" className="bg-blue-500 text-white p-2 rounded-md">
-                Add Project
-            </button>
-        </form>
-    );
+    if (mode === "full") {
+        return (
+            <div>
+            <form action={addFiles}
+                  className="flex flex-col items-center justify-center p-5 rounded-lg bg-gray-100 shadow-md">
+                <input type="file" name="projectFile" className="w-full p-2 rounded-md border border-gray-300 mb-2"/>
+                <button type="submit" className="bg-blue-500 text-white p-2 rounded-md">
+                    Add File
+                </button>
+            </form>
+            </div>
+        );
+    } else {
+        return (
+            <div>
+                <AddFilesIcon pageId={pageId} mode="icon"/>
+            </div>
+        )
+    }
 }

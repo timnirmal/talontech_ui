@@ -5,9 +5,10 @@ import NewProject from "@/app/projects/addProject";
 import {Database} from "@/types/supabase";
 import NewFiles from "@/app/projects/[id]/files/addFiles";
 import ChatWindowStarter from "@/app/projects/[id]/chatWindowStarter";
-import Window from "@/app/projects/[id]/window";
+import Sidebar from "@/app/projects/[id]/sideBar";
+import ShowFiles from "@/app/projects/[id]/files/showFiles";
 
-export default async function ProjectsView({ params }: { params: { id: string } }) {
+export default async function FilesView({ params }: { params: { id: string } }) {
     // const supabase = createServerComponentClient({cookies});
     const supabase = createServerComponentClient<Database>({cookies})
 
@@ -17,7 +18,8 @@ export default async function ProjectsView({ params }: { params: { id: string } 
 
     return (
         <div>
-            <ChatWindowStarter params={params}/>
+            <NewFiles pageId={params.id}/>
+            <ShowFiles params={params}/>
         </div>
     )
 }
