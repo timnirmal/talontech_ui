@@ -1,17 +1,12 @@
 'use client';
 
-import React, {useMemo, useState} from 'react';
-import {useEffect} from 'react';
-import Image from "next/image";
-import Sidebar from "@/app/projects/[id]/sideBar";
-import NewFiles from "@/app/projects/[id]/files/addFiles";
+import React, {useEffect, useMemo, useState} from 'react';
 import AddFilesIcon from "@/app/projects/[id]/chat/addFilesIcon";
-import ChatComponent from "@/app/projects/[id]/chat/[chat_id]/chatStream";
 import {useManualServerSentEvents} from "@/hooks/useManualServerSentEvents";
 import {createClientComponentClient} from "@supabase/auth-helpers-nextjs";
 import {Database} from "@/types/supabase";
 import RealTimeM from "@/app/projects/[id]/chat/[chat_id]/test/RealTimeM";
-import {usePathname} from "next/navigation";
+import {MessageNode} from "@/app/projects/[id]/chat/[chat_id]/messageNode";
 
 interface ChatMessage {
     id: string; // Unique identifier for each message
@@ -43,23 +38,6 @@ const messages_demo: ChatMessage[] = [
     {id: 'msg2', type: 'ai', senderId: 'ai1', text: 'Hello, John! How can I assist you today?'},
     {id: 'msg3', type: 'user', senderId: 'user2', text: "Hello, AI! I'm timnirmal. Can tell me about your features?"},
 ];
-
-// Define a message tree node
-class MessageNode {
-    constructor(data) {
-        this.data = data; // the message data itself
-        this.replies = []; // children messages (branches)
-        this.versions = []; // different versions of this message
-    }
-
-    addReply(message) {
-        this.replies.push(new MessageNode(message));
-    }
-
-    addVersion(message) {
-        this.versions.push(message);
-    }
-}
 
 
 export default function ChatWindow({params}: { params: { id: string } }) {
