@@ -10,6 +10,7 @@ import ChatComponent from "@/app/projects/[id]/chat/[chat_id]/chatStream";
 import {useManualServerSentEvents} from "@/hooks/useManualServerSentEvents";
 import {createClientComponentClient} from "@supabase/auth-helpers-nextjs";
 import {Database} from "@/types/supabase";
+import RealTimeM from "@/app/projects/[id]/chat/[chat_id]/test/RealTimeM";
 
 interface ChatMessage {
     id: string; // Unique identifier for each message
@@ -58,47 +59,47 @@ export default function ChatWindow({params}: { params: { id: string } }) {
         setCurrentFiles({...currentFiles, [fileName]: imageUrl})
     };
 
-    const getFileList = async () => {
-        // console.log('uploadFile', file);
-        // const formData = new FormData();
-        // formData.append('file', file);
-        // formData.append('title', 'title');
-        // formData.append('description', 'description');
-        // formData.append('pageId', pageId);
-        // // for (let [key, value] of formData.entries()) {
-        // //     console.log(key, value);
-        // // }
+    // const getFileList = async () => {
+    //     // console.log('uploadFile', file);
+    //     // const formData = new FormData();
+    //     // formData.append('file', file);
+    //     // formData.append('title', 'title');
+    //     // formData.append('description', 'description');
+    //     // formData.append('pageId', pageId);
+    //     // // for (let [key, value] of formData.entries()) {
+    //     // //     console.log(key, value);
+    //     // // }
+    //
+    //     // Make an API request to your server-side endpoint
+    //     const response = await fetch('/api/chat', {
+    //         method: 'GET',
+    //         // body: formData,
+    //     });
+    //
+    //     // Handle the response from the server
+    //     if (response.ok) {
+    //         console.log('File uploaded successfully', response.status);
+    //         const data = await response.json();
+    //         console.log('data', data);
+    //         // const imageUrl = data.url;
+    //         // const fileName = data.filename;
+    //         // onUploadSuccess(fileName, imageUrl);
+    //         // setImages(imageUrl);
+    //     } else {
+    //         console.error('File upload failed with status', response.status);
+    //     }
+    // };
 
-        // Make an API request to your server-side endpoint
-        const response = await fetch('/api/chat', {
-            method: 'GET',
-            // body: formData,
-        });
-
-        // Handle the response from the server
-        if (response.ok) {
-            console.log('File uploaded successfully', response.status);
-            const data = await response.json();
-            console.log('data', data);
-            // const imageUrl = data.url;
-            // const fileName = data.filename;
-            // onUploadSuccess(fileName, imageUrl);
-            // setImages(imageUrl);
-        } else {
-            console.error('File upload failed with status', response.status);
-        }
-    };
-
-    const handleFileChange = (event) => {
-        // const file = event.target.files[0];
-        // if (file) {
-        //     console.log('file', file);
-        //     uploadFile(file);
-        // }
-        // event.target.value = '';
-        getFileList()
-        console.log("Finished handleFileChange");
-    };
+    // const handleFileChange = (event) => {
+    //     // const file = event.target.files[0];
+    //     // if (file) {
+    //     //     console.log('file', file);
+    //     //     uploadFile(file);
+    //     // }
+    //     // event.target.value = '';
+    //     getFileList()
+    //     console.log("Finished handleFileChange");
+    // };
 
     // const [isSidebarOpen, setIsSidebarOpen] = useState(true); // State to manage sidebar visibility
 
@@ -131,6 +132,11 @@ export default function ChatWindow({params}: { params: { id: string } }) {
         return messages.join('').replace(/\n\n/g, '<br /><br />');
     }, [messages]);
 
+    const {data, error} = await supabase
+        .from('chat_message')
+        .select()
+    console.log("data", data);
+
 
     return (
         <div className="flex h-screen">
@@ -139,25 +145,11 @@ export default function ChatWindow({params}: { params: { id: string } }) {
                 <div className="container mx-auto px-4">
                     {/*<ChatComponent/>*/}
                 </div>
-                {/* Chat messages area */}
-                <div className="flex-1 p-5 overflow-auto">
-                    {messages_demo.map((message) => {
-                        const sender = getMessageSender(message.senderId);
-                        return (
-                            <div key={message.id} className="flex items-start space-x-2 mb-4">
-                                {/* Sender Avatar */}
-                                <img src={sender?.avatar || '/default-avatar.png'} alt={sender?.name}
-                                     className="w-10 h-10 rounded-full object-cover"/>
-                                {/* Message Text and Sender's Name */}
-                                <div
-                                    className={`flex flex-col rounded max-w-xs ${message.type === 'user' ? 'bg-blue-100' : 'bg-green-100'} p-2`}>
-                                    <div className="font-bold">{sender?.name}</div>
-                                    <div>{message.text}</div>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
+
+                <RealTimeM ServerPosts={data ?? []}/>
+                {/*<ChatComponent/>*/}
+                <div className="mt-4 p-2 bg-gray-100 rounded shadow"
+                     dangerouslySetInnerHTML={{__html: combinedMessages}}/>
 
                 {/*Chat Messages Area*/}
                 <div className="p-5 bg-gray-100 overflow-hidden">
@@ -178,11 +170,11 @@ export default function ChatWindow({params}: { params: { id: string } }) {
                     </div>
                 </div>
 
-                <button className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded"
-                        onClick={handleFileChange}
-                >
-                    Send
-                </button>
+                {/*<button className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded"*/}
+                {/*        onClick={handleFileChange}*/}
+                {/*>*/}
+                {/*    Send*/}
+                {/*</button>*/}
 
 
                 {/* Input area */}

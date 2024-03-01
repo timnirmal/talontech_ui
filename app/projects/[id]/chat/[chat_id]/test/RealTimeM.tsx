@@ -44,13 +44,25 @@ export default function RealTimeM({ServerPosts,}: { ServerPosts }) {
             supabase.removeChannel(channel)
         }
     }, [])
+
     return (
-        <div>
-            {ServerPosts.map((post) => (
-                <div key={post.message_id}>
-                    <p>{post.text}</p>
-                </div>
-            ))}
+        <div className="flex-1 p-5 overflow-auto">
+            {messages.map((message) => {
+                // const sender = getMessageSender(message.senderId); // Assuming you have senderId in your message data
+                return (
+                    <div>
+                        <div key={message.message_id} className="flex items-start space-x-2 mb-4">
+                            <img src={'/default-avatar.png'} alt={"sender?.name"}
+                                 className="w-10 h-10 rounded-full object-cover"/>
+                            <div
+                                className={`flex flex-col rounded ${message.type === 'user' ? 'bg-blue-100' : 'bg-green-100'} p-2`}>
+                                <div className="font-bold">{"sender?.name"}</div>
+                                <div>{message.text}</div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })}
         </div>
     );
     // return (
@@ -59,3 +71,24 @@ export default function RealTimeM({ServerPosts,}: { ServerPosts }) {
     //     </div>
     // );
 }
+
+
+{/*/!* Chat messages area *!/*/}
+{/*<div className="flex-1 p-5 overflow-auto">*/}
+{/*    {messages_demo.map((message) => {*/}
+{/*        const sender = getMessageSender(message.senderId);*/}
+{/*        return (*/}
+{/*            <div key={message.id} className="flex items-start space-x-2 mb-4">*/}
+{/*                /!* Sender Avatar *!/*/}
+{/*                <img src={sender?.avatar || '/default-avatar.png'} alt={sender?.name}*/}
+{/*                     className="w-10 h-10 rounded-full object-cover"/>*/}
+{/*                /!* Message Text and Sender's Name *!/*/}
+{/*                <div*/}
+{/*                    className={`flex flex-col rounded max-w-xs ${message.type === 'user' ? 'bg-blue-100' : 'bg-green-100'} p-2`}>*/}
+{/*                    <div className="font-bold">{sender?.name}</div>*/}
+{/*                    <div>{message.text}</div>*/}
+{/*                </div>*/}
+{/*            </div>*/}
+{/*        );*/}
+{/*    })}*/}
+{/*</div>*/}
