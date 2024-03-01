@@ -9,6 +9,109 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      chat_message: {
+        Row: {
+          branch_id: string | null
+          branch_parent_id: string | null
+          chat_id: string | null
+          created_date: string | null
+          llm_id: string | null
+          message_id: string
+          original_message_id: string | null
+          previous_message_id: string | null
+          text: string | null
+          user_id: string | null
+          version: number | null
+        }
+        Insert: {
+          branch_id?: string | null
+          branch_parent_id?: string | null
+          chat_id?: string | null
+          created_date?: string | null
+          llm_id?: string | null
+          message_id?: string
+          original_message_id?: string | null
+          previous_message_id?: string | null
+          text?: string | null
+          user_id?: string | null
+          version?: number | null
+        }
+        Update: {
+          branch_id?: string | null
+          branch_parent_id?: string | null
+          chat_id?: string | null
+          created_date?: string | null
+          llm_id?: string | null
+          message_id?: string
+          original_message_id?: string | null
+          previous_message_id?: string | null
+          text?: string | null
+          user_id?: string | null
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_message_branch_parent_id_fkey"
+            columns: ["branch_parent_id"]
+            isOneToOne: false
+            referencedRelation: "chat_message"
+            referencedColumns: ["message_id"]
+          },
+          {
+            foreignKeyName: "chat_message_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chat_session"
+            referencedColumns: ["chat_id"]
+          },
+          {
+            foreignKeyName: "chat_message_llm_id_fkey"
+            columns: ["llm_id"]
+            isOneToOne: false
+            referencedRelation: "llm"
+            referencedColumns: ["llm_id"]
+          },
+          {
+            foreignKeyName: "chat_message_original_message_id_fkey"
+            columns: ["original_message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_message"
+            referencedColumns: ["message_id"]
+          },
+          {
+            foreignKeyName: "chat_message_previous_message_id_fkey"
+            columns: ["previous_message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_message"
+            referencedColumns: ["message_id"]
+          },
+          {
+            foreignKeyName: "chat_message_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      chat_session: {
+        Row: {
+          chat_id: string
+          created_date: string | null
+          updated_date: string | null
+        }
+        Insert: {
+          chat_id?: string
+          created_date?: string | null
+          updated_date?: string | null
+        }
+        Update: {
+          chat_id?: string
+          created_date?: string | null
+          updated_date?: string | null
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           content: string | null
@@ -84,6 +187,62 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          }
+        ]
+      }
+      llm: {
+        Row: {
+          created_date: string | null
+          llm_id: string
+          name: string | null
+          origin: string | null
+          version: string | null
+        }
+        Insert: {
+          created_date?: string | null
+          llm_id?: string
+          name?: string | null
+          origin?: string | null
+          version?: string | null
+        }
+        Update: {
+          created_date?: string | null
+          llm_id?: string
+          name?: string | null
+          origin?: string | null
+          version?: string | null
+        }
+        Relationships: []
+      }
+      multimedia_attachment: {
+        Row: {
+          attachment_id: string
+          created_date: string | null
+          file_path: string | null
+          file_type: string | null
+          message_id: string | null
+        }
+        Insert: {
+          attachment_id: string
+          created_date?: string | null
+          file_path?: string | null
+          file_type?: string | null
+          message_id?: string | null
+        }
+        Update: {
+          attachment_id?: string
+          created_date?: string | null
+          file_path?: string | null
+          file_type?: string | null
+          message_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "multimedia_attachment_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_message"
+            referencedColumns: ["message_id"]
           }
         ]
       }

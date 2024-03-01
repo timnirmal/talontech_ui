@@ -1,12 +1,15 @@
 'use client';
 
-import React, {useState} from 'react';
+import React, {useMemo, useState} from 'react';
 import { useEffect} from 'react';
 import Image from "next/image";
 import Sidebar from "@/app/projects/[id]/sideBar";
 import NewFiles from "@/app/projects/[id]/files/addFiles";
 import AddFilesIcon from "@/app/projects/[id]/chat/addFilesIcon";
 import ChatComponent from "@/app/projects/[id]/chat/[chat_id]/chatStream";
+import {useManualServerSentEvents} from "@/hooks/useManualServerSentEvents";
+import {createClientComponentClient} from "@supabase/auth-helpers-nextjs";
+import {Database} from "@/types/supabase";
 
 interface ChatMessage {
     id: string; // Unique identifier for each message
@@ -33,7 +36,7 @@ const senders: Sender[] = [
     // Add more users and AIs as needed
 ];
 
-const messages: ChatMessage[] = [
+const messages_demo: ChatMessage[] = [
     {id: 'msg1', type: 'user', senderId: 'user1', text: 'Hello, AI!'},
     {id: 'msg2', type: 'ai', senderId: 'ai1', text: 'Hello, John! How can I assist you today?'},
     {id: 'msg3', type: 'user', senderId: 'user2', text: "Hello, AI! I'm timnirmal. Can tell me about your features?"},
@@ -45,6 +48,7 @@ export default function ChatWindow({params}: { params: { id: string } }) {
     const [imageDataUrl, setImageDataUrl] = useState(null);
     const [currentFiles, setCurrentFiles] = useState({});
     const [messageText, setMessageText] = useState("")
+    const supabase = createClientComponentClient<Database>();
 
     const handleImageUpload = (fileName, imageUrl) => {
         // Update the state with the new image URL
@@ -52,6 +56,48 @@ export default function ChatWindow({params}: { params: { id: string } }) {
         setImageDataUrl(imageUrl)
         // Add the new image URL to the current files like {file1: url1, file2: url2}
         setCurrentFiles({...currentFiles, [fileName]: imageUrl})
+    };
+
+    const getFileList = async () => {
+        // console.log('uploadFile', file);
+        // const formData = new FormData();
+        // formData.append('file', file);
+        // formData.append('title', 'title');
+        // formData.append('description', 'description');
+        // formData.append('pageId', pageId);
+        // // for (let [key, value] of formData.entries()) {
+        // //     console.log(key, value);
+        // // }
+
+        // Make an API request to your server-side endpoint
+        const response = await fetch('/api/chat', {
+            method: 'GET',
+            // body: formData,
+        });
+
+        // Handle the response from the server
+        if (response.ok) {
+            console.log('File uploaded successfully', response.status);
+            const data = await response.json();
+            console.log('data', data);
+            // const imageUrl = data.url;
+            // const fileName = data.filename;
+            // onUploadSuccess(fileName, imageUrl);
+            // setImages(imageUrl);
+        } else {
+            console.error('File upload failed with status', response.status);
+        }
+    };
+
+    const handleFileChange = (event) => {
+        // const file = event.target.files[0];
+        // if (file) {
+        //     console.log('file', file);
+        //     uploadFile(file);
+        // }
+        // event.target.value = '';
+        getFileList()
+        console.log("Finished handleFileChange");
     };
 
     // const [isSidebarOpen, setIsSidebarOpen] = useState(true); // State to manage sidebar visibility
@@ -74,24 +120,34 @@ export default function ChatWindow({params}: { params: { id: string } }) {
         setCurrentFiles(filteredFiles);
     };
 
+    const {
+        messages,
+        startFetching,
+        stopFetching
+    } = useManualServerSentEvents('http://127.0.0.1:8000/chat_model', {message: messageText});
+
+    // Combine messages and replace '\n\n' with HTML line break '<br /><br />'
+    const combinedMessages = useMemo(() => {
+        return messages.join('').replace(/\n\n/g, '<br /><br />');
+    }, [messages]);
+
 
     return (
         <div className="flex h-screen">
             {/* Chat Area */}
             <div className="flex-1 flex flex-col">
                 <div className="container mx-auto px-4">
-                    <ChatComponent/>
+                    {/*<ChatComponent/>*/}
                 </div>
                 {/* Chat messages area */}
                 <div className="flex-1 p-5 overflow-auto">
-                    {messages.map((message) => {
+                    {messages_demo.map((message) => {
                         const sender = getMessageSender(message.senderId);
                         return (
                             <div key={message.id} className="flex items-start space-x-2 mb-4">
                                 {/* Sender Avatar */}
                                 <img src={sender?.avatar || '/default-avatar.png'} alt={sender?.name}
                                      className="w-10 h-10 rounded-full object-cover"/>
-
                                 {/* Message Text and Sender's Name */}
                                 <div
                                     className={`flex flex-col rounded max-w-xs ${message.type === 'user' ? 'bg-blue-100' : 'bg-green-100'} p-2`}>
@@ -122,8 +178,13 @@ export default function ChatWindow({params}: { params: { id: string } }) {
                     </div>
                 </div>
 
+                <button className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded"
+                        onClick={handleFileChange}
+                >
+                    Send
+                </button>
 
-                {/* Input area */}
+
                 {/* Input area */}
                 <div className="p-5 bg-gray-100">
                     <div className="p-5 bg-gray-300 mb-4 rounded-2xl flex flex-wrap">
@@ -143,7 +204,7 @@ export default function ChatWindow({params}: { params: { id: string } }) {
                         <input type="text" className="flex-1 p-2 rounded border border-gray-300"
                                placeholder="Type a message..." onChange={(e) => setMessageText(e.target.value)}/>
                         <button className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded"
-                                onClick={() => console.log("Send message", messageText)}
+                                onClick={startFetching}
                         >
                             Send
                         </button>

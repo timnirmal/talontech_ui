@@ -1,14 +1,15 @@
 // components/ChatComponent.tsx
 import React, {useMemo, useState} from 'react';
-import { useManualServerSentEvents } from '@/hooks/useManualServerSentEvents';
+import {useManualServerSentEvents} from '@/hooks/useManualServerSentEvents';
 
 const ChatComponent: React.FC = () => {
     const [messageText, setMessageText] = useState("What's on your mind?");
 
-    // const { messages, startListening, stopListening } = useManualServerSentEvents('http://127.0.0.1:8000/chat_model', messageText);
-    // const combinedMessages = messages.join('').replace(/\n/g, '<br /><br />');
-
-    const { messages, startFetching, stopFetching } = useManualServerSentEvents('http://127.0.0.1:8000/chat_model', { message: messageText});
+    const {
+        messages,
+        startFetching,
+        stopFetching
+    } = useManualServerSentEvents('http://127.0.0.1:8000/chat_model', {message: messageText});
 
     // Combine messages and replace '\n\n' with HTML line break '<br /><br />'
     const combinedMessages = useMemo(() => {
@@ -29,13 +30,7 @@ const ChatComponent: React.FC = () => {
             >
                 Stop Streaming
             </button>
-            {/*<button onClick={handleStartClick}>Start Streaming</button>*/}
             <div className="mt-4 p-2 bg-gray-100 rounded shadow" dangerouslySetInnerHTML={{__html: combinedMessages}}/>
-            {/*<div>*/}
-            {/*    {messages.map((message, index) => (*/}
-            {/*        <p key={index}>{message}</p>*/}
-            {/*    ))}*/}
-            {/*</div>*/}
         </div>
     );
 };
