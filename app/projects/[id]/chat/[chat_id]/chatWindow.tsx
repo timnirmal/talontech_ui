@@ -6,7 +6,7 @@ import {useManualServerSentEvents} from "@/hooks/useManualServerSentEvents";
 import {createClientComponentClient} from "@supabase/auth-helpers-nextjs";
 import {Database} from "@/types/supabase";
 import RealTimeM from "@/app/projects/[id]/chat/[chat_id]/test/RealTimeM";
-import {MessageNode} from "@/app/projects/[id]/chat/[chat_id]/messageNode";
+import MessageViewerComponent from "@/app/projects/[id]/chat/[chat_id]/MessageTreeComponent";
 
 interface ChatMessage {
     id: string; // Unique identifier for each message
@@ -135,6 +135,7 @@ export default function ChatWindow({params}: { params: { id: string } }) {
         setMessageTree(rootMessages);
     };
 
+
     // if (isLoading) {
     //     return <div>Loading chat messages...</div>; // Display a loading message or spinner
     // }
@@ -149,7 +150,8 @@ export default function ChatWindow({params}: { params: { id: string } }) {
                 </div>
 
                 {messageTree && messageTree.length > 0 ? (
-                    <RealTimeM messageTree={messageTree} combinedMessages={combinedMessages} />
+                    // <RealTimeM messageTree={messageTree} combinedMessages={combinedMessages} />
+                    <MessageViewerComponent messageTree={messageTree} />
                 ) : isLoading ? (
                     <div>Loading chat messages...</div>
                 ) : (

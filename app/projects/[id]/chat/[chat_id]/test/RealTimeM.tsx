@@ -66,19 +66,48 @@ export default function RealTimeM({messageTree, combinedMessages}: { messageTree
 
     const sanitizedHtml = DOMPurify.sanitize(combinedMessages);
 
-    const renderMessageNode = (node) => (
-        <div key={node.data.message_id} className="flex items-start space-x-2 mb-4">
-            {console.log("node", node)}
-            <img src={'/profile_image.png'} alt={node.data.sender_name || "Sender"}
-                 className="w-10 h-10 rounded-full object-cover" />
-            <div className={`flex flex-col rounded ${node.data.type === 'user' ? 'bg-blue-100' : 'bg-green-100'} p-2`}>
-                <div className="font-bold">{node.data.sender_name || "Unknown Sender"}</div>
-                <div>{node.data.text}</div>
-                {/* Render replies if any */}
-                {node.replies && node.replies.map(reply => renderMessageNode(reply))}
+    const renderVersionControls = (node) => {
+        return (
+            <div className="flex items-center space-x-2">
+                <button
+                    onClick={() => {
+                        node.prevVersion();
+                        setLocalMessageTree([...localMessageTree]); // Trigger a state update to re-render
+                    }}
+                    disabled={node.currentVersionIndex === 0}
+                >
+                    {"<"}
+                </button>
+                <button
+                    onClick={() => {
+                        node.nextVersion();
+                        setLocalMessageTree([...localMessageTree]); // Trigger a state update to re-render
+                    }}
+                    disabled={node.currentVersionIndex >= node.versions.length - 1}
+                >
+                    {">"}
+                </button>
             </div>
-        </div>
-    );
+        );
+    };
+
+    const renderMessageNode = (node) => {
+        const currentVersion = node.getCurrentVersion(); // Get the currently displayed version
+        return (
+            <div key={currentVersion.data.message_id} className="flex items-start space-x-2 mb-4">
+                <img src={'/profile_image.png'} alt={currentVersion.data.sender_name || "Sender"}
+                     className="w-10 h-10 rounded-full object-cover" />
+                <div className={`flex flex-col rounded ${currentVersion.data.type === 'user' ? 'bg-blue-100' : 'bg-green-100'} p-2`}>
+                    <div className="font-bold">{currentVersion.data.sender_name || "Unknown Sender"}</div>
+                    <div>{currentVersion.data.text}</div>
+                    {/* Include version navigation if there are multiple versions */}
+                    {node.versions.length > 1 && renderVersionControls(node)}
+                    {/* Render replies if any */}
+                    {currentVersion.replies && currentVersion.replies.map(reply => renderMessageNode(reply))}
+                </div>
+            </div>
+        );
+    };
 
     return (
         <div className="flex-1 p-5 overflow-auto">
