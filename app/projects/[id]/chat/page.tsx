@@ -14,6 +14,8 @@ export default async function ChatWindowStarterView({ params }: { params: { id: 
         data: {user},
     } = await supabase.auth.getUser()
 
+    console.log('params', params)
+
     return (
         <div>
             <ChatWindowStarter params={params}/>

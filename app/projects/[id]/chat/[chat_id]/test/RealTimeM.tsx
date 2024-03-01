@@ -3,9 +3,10 @@
 import {useEffect, useState} from "react";
 import {createClientComponentClient} from "@supabase/auth-helpers-nextjs";
 import {Database} from "@/types/supabase";
+import DOMPurify from 'dompurify';
 
 
-export default function RealTimeM({ServerPosts,}: { ServerPosts }) {
+export default function RealTimeM({messageTree, combinedMessages}: { messageTree: any, combinedMessages: any }) {
     const supabase = createClientComponentClient<Database>();
     const [messages, setMessages] = useState(ServerPosts);
 
@@ -45,6 +46,8 @@ export default function RealTimeM({ServerPosts,}: { ServerPosts }) {
         }
     }, [])
 
+    const sanitizedHtml = DOMPurify.sanitize(combinedMessages);
+
     return (
         <div className="flex-1 p-5 overflow-auto">
             {messages.map((message) => {
@@ -52,7 +55,7 @@ export default function RealTimeM({ServerPosts,}: { ServerPosts }) {
                 return (
                     <div>
                         <div key={message.message_id} className="flex items-start space-x-2 mb-4">
-                            <img src={'/default-avatar.png'} alt={"sender?.name"}
+                            <img src={'/profile_image.png'} alt=""
                                  className="w-10 h-10 rounded-full object-cover"/>
                             <div
                                 className={`flex flex-col rounded ${message.type === 'user' ? 'bg-blue-100' : 'bg-green-100'} p-2`}>
@@ -63,6 +66,20 @@ export default function RealTimeM({ServerPosts,}: { ServerPosts }) {
                     </div>
                 );
             })}
+            {sanitizedHtml &&
+            <div className="flex items-start space-x-2 mb-4">
+                <img src={'/profile_image.png'} alt={"Sender Name"}
+                     className="w-10 h-10 rounded-full object-cover"/>
+                <div className={`flex flex-col rounded bg-green-100 p-2`}>
+                    <div className="font-bold">Sender Name</div>
+                    {/*<div>{message.text}</div>*/}
+                    <div dangerouslySetInnerHTML={{__html: sanitizedHtml}}/>
+                </div>
+            </div>
+            }
+            {/*// show combinedMessages as HTML with dangerouslySetInnerHTML with same styling as above*/}
+
+
         </div>
     );
     // return (
@@ -73,13 +90,20 @@ export default function RealTimeM({ServerPosts,}: { ServerPosts }) {
 }
 
 
-{/*/!* Chat messages area *!/*/}
-{/*<div className="flex-1 p-5 overflow-auto">*/}
-{/*    {messages_demo.map((message) => {*/}
-{/*        const sender = getMessageSender(message.senderId);*/}
-{/*        return (*/}
-{/*            <div key={message.id} className="flex items-start space-x-2 mb-4">*/}
-{/*                /!* Sender Avatar *!/*/}
+{/*/!* Chat messages area *!/*/
+}
+{/*<div className="flex-1 p-5 overflow-auto">*/
+}
+{/*    {messages_demo.map((message) => {*/
+}
+{/*        const sender = getMessageSender(message.senderId);*/
+}
+{/*        return (*/
+}
+{/*            <div key={message.id} className="flex items-start space-x-2 mb-4">*/
+}
+{/*                /!* Sender Avatar *!/*/
+}
 {/*                <img src={sender?.avatar || '/default-avatar.png'} alt={sender?.name}*/}
 {/*                     className="w-10 h-10 rounded-full object-cover"/>*/}
 {/*                /!* Message Text and Sender's Name *!/*/}

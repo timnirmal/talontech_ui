@@ -1,7 +1,7 @@
 'use client';
 
 import React, {useMemo, useState} from 'react';
-import { useEffect} from 'react';
+import {useEffect} from 'react';
 import Image from "next/image";
 import Sidebar from "@/app/projects/[id]/sideBar";
 import NewFiles from "@/app/projects/[id]/files/addFiles";
@@ -11,6 +11,7 @@ import {useManualServerSentEvents} from "@/hooks/useManualServerSentEvents";
 import {createClientComponentClient} from "@supabase/auth-helpers-nextjs";
 import {Database} from "@/types/supabase";
 import RealTimeM from "@/app/projects/[id]/chat/[chat_id]/test/RealTimeM";
+import {usePathname} from "next/navigation";
 
 interface ChatMessage {
     id: string; // Unique identifier for each message
@@ -43,6 +44,23 @@ const messages_demo: ChatMessage[] = [
     {id: 'msg3', type: 'user', senderId: 'user2', text: "Hello, AI! I'm timnirmal. Can tell me about your features?"},
 ];
 
+// Define a message tree node
+class MessageNode {
+    constructor(data) {
+        this.data = data; // the message data itself
+        this.replies = []; // children messages (branches)
+        this.versions = []; // different versions of this message
+    }
+
+    addReply(message) {
+        this.replies.push(new MessageNode(message));
+    }
+
+    addVersion(message) {
+        this.versions.push(message);
+    }
+}
+
 
 export default function ChatWindow({params}: { params: { id: string } }) {
     const [imageData, setImageData] = useState(null);
@@ -50,6 +68,11 @@ export default function ChatWindow({params}: { params: { id: string } }) {
     const [currentFiles, setCurrentFiles] = useState({});
     const [messageText, setMessageText] = useState("")
     const supabase = createClientComponentClient<Database>();
+    // const [serverPosts, setServerPosts] = useState([]); // Use state to hold server posts
+    const [isLoading, setIsLoading] = useState(true);
+    const [messageTree, setMessageTree] = useState([]);
+
+    console.log("params.id", params.chat_id)
 
     const handleImageUpload = (fileName, imageUrl) => {
         // Update the state with the new image URL
@@ -57,57 +80,6 @@ export default function ChatWindow({params}: { params: { id: string } }) {
         setImageDataUrl(imageUrl)
         // Add the new image URL to the current files like {file1: url1, file2: url2}
         setCurrentFiles({...currentFiles, [fileName]: imageUrl})
-    };
-
-    // const getFileList = async () => {
-    //     // console.log('uploadFile', file);
-    //     // const formData = new FormData();
-    //     // formData.append('file', file);
-    //     // formData.append('title', 'title');
-    //     // formData.append('description', 'description');
-    //     // formData.append('pageId', pageId);
-    //     // // for (let [key, value] of formData.entries()) {
-    //     // //     console.log(key, value);
-    //     // // }
-    //
-    //     // Make an API request to your server-side endpoint
-    //     const response = await fetch('/api/chat', {
-    //         method: 'GET',
-    //         // body: formData,
-    //     });
-    //
-    //     // Handle the response from the server
-    //     if (response.ok) {
-    //         console.log('File uploaded successfully', response.status);
-    //         const data = await response.json();
-    //         console.log('data', data);
-    //         // const imageUrl = data.url;
-    //         // const fileName = data.filename;
-    //         // onUploadSuccess(fileName, imageUrl);
-    //         // setImages(imageUrl);
-    //     } else {
-    //         console.error('File upload failed with status', response.status);
-    //     }
-    // };
-
-    // const handleFileChange = (event) => {
-    //     // const file = event.target.files[0];
-    //     // if (file) {
-    //     //     console.log('file', file);
-    //     //     uploadFile(file);
-    //     // }
-    //     // event.target.value = '';
-    //     getFileList()
-    //     console.log("Finished handleFileChange");
-    // };
-
-    // const [isSidebarOpen, setIsSidebarOpen] = useState(true); // State to manage sidebar visibility
-
-    // Function to toggle sidebar visibility
-    // const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
-
-    const getMessageSender = (senderId: string): Sender | undefined => {
-        return senders.find(sender => sender.id === senderId);
     };
 
     const removeImage = (fileUrlToRemove) => {
@@ -132,10 +104,62 @@ export default function ChatWindow({params}: { params: { id: string } }) {
         return messages.join('').replace(/\n\n/g, '<br /><br />');
     }, [messages]);
 
-    const {data, error} = await supabase
-        .from('chat_message')
-        .select()
-    console.log("data", data);
+    useEffect(() => {
+        console.log("Calling useEffect in chatWindow.tsx")
+        const fetchData = async () => {
+            setIsLoading(true);
+            const {data, error} = await supabase
+                .from('chat_message')
+                .select()
+                .eq('chat_id', params.chat_id)
+
+            console.log("data", data);
+            console.log("error", error);
+
+            if (data) {
+                // setServerPosts(data);
+                constructMessageTree(data);
+            }
+            if (error) {
+                console.error("Error fetching chat messages:", error);
+            }
+            setIsLoading(false);
+        };
+
+        fetchData();
+    }, []);
+
+    const constructMessageTree = (messages) => {
+        const messageMap = new Map();
+        messages.forEach((msg) => {
+            messageMap.set(msg.message_id, new MessageNode(msg));
+        });
+
+        // Build the tree
+        const rootMessages = [];
+        messages.forEach((msg) => {
+            const node = messageMap.get(msg.message_id);
+            if (msg.previous_message_id) {
+                const parentNode = messageMap.get(msg.previous_message_id);
+                parentNode.addReply(node);
+            } else {
+                rootMessages.push(node);
+            }
+            if (msg.version_number) {
+                const parentNode = messageMap.get(msg.previous_message_id);
+                parentNode.addVersion(node);
+            }
+        });
+
+        console.log("rootMessages", rootMessages);
+
+
+        setMessageTree(rootMessages);
+    };
+
+    // if (isLoading) {
+    //     return <div>Loading chat messages...</div>; // Display a loading message or spinner
+    // }
 
 
     return (
@@ -146,10 +170,16 @@ export default function ChatWindow({params}: { params: { id: string } }) {
                     {/*<ChatComponent/>*/}
                 </div>
 
-                <RealTimeM ServerPosts={data ?? []}/>
-                {/*<ChatComponent/>*/}
-                <div className="mt-4 p-2 bg-gray-100 rounded shadow"
-                     dangerouslySetInnerHTML={{__html: combinedMessages}}/>
+                {messageTree && messageTree.length > 0 ? (
+                    <RealTimeM messageTree={messageTree} combinedMessages={combinedMessages} />
+                ) : isLoading ? (
+                    <div>Loading chat messages...</div>
+                ) : (
+                    <div>No chat messages found</div>
+                )}
+                {/*/!*<ChatComponent/>*!/*/}
+                {/*<div className="mt-4 p-2 bg-gray-100 rounded shadow"*/}
+                {/*     dangerouslySetInnerHTML={{__html: combinedMessages}}/>*/}
 
                 {/*Chat Messages Area*/}
                 <div className="p-5 bg-gray-100 overflow-hidden">
