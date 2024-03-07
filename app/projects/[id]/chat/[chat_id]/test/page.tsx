@@ -2,8 +2,9 @@
 
 import {createClientComponentClient} from "@supabase/auth-helpers-nextjs";
 import {Database} from "@/types/supabase";
-import RealTimeM from "@/app/projects/[id]/chat/[chat_id]/test/RealTimeM";
-import TestMessageTree from "@/app/projects/[id]/chat/[chat_id]/messageNode";
+// import RealTimeM from "@/app/projects/[id]/chat/[chat_id]/test/RealTimeM";
+// import TestMessageTree from "@/app/projects/[id]/chat/[chat_id]/messageNode";
+import ChatComponent from "@/app/projects/[id]/chat/[chat_id]/messageNode";
 
 
 
@@ -77,7 +78,8 @@ export default async function Posts() {
 
     return (
         <div className="text-sm">
-            <TestMessageTree data={data}/>
+            {/*<TestMessageTree data={data}/>*/}
+            <ChatComponent data={data}/>
             {/*<RealTimeM ServerPosts={data ?? []}/>*/}
         </div>
     );
