@@ -106,9 +106,15 @@ const buildTree = (data) => {
 
 // Recursive React component to render the tree
 // Recursive React component to render the tree with only one version visible
-const MessageComponent = ({ node, changeVersion, isChild }) => {
+const MessageComponent = ({ node, isChild }) => {
     const versionNumbers = Object.keys(node.versions).map(Number).sort((a, b) => a - b);
     const [currentVersion, setCurrentVersion] = React.useState(node.currentVersion);
+
+    // Inside MessageComponent
+    React.useEffect(() => {
+        // Listen to changes in version and update local state to force re-render
+        setCurrentVersion(node.currentVersion);
+    }, [node.currentVersion]);
 
     const navigateVersion = (delta) => {
         const currentIndex = versionNumbers.indexOf(currentVersion);
@@ -119,7 +125,7 @@ const MessageComponent = ({ node, changeVersion, isChild }) => {
             node.setCurrentVersion(versionNumbers[newVersionIndex]);
         }
 
-        changeVersion(versionNumbers[newVersionIndex]);
+        // changeVersion(versionNumbers[newVersionIndex]);
     };
 
     const currentVersionData = node.getCurrentVersionData();
@@ -145,6 +151,7 @@ const MessageComponent = ({ node, changeVersion, isChild }) => {
                 <img src={'/profile_image.png'} alt="Sender" className="w-10 h-10 rounded-full object-cover" />
                 <div className={`flex flex-col rounded ${currentVersionData.user_id ? 'bg-blue-100' : 'bg-green-100'} p-2`}>
                     <div className="font-bold">{"Sender's Name"}</div>
+                    <div>{currentVersionData.message_id}</div>
                     <div>{currentVersionData.text}</div>
                     {/* Include version navigation if there are multiple versions */}
                     {versionNumbers.length > 1 && renderVersionControls(node)}
@@ -152,8 +159,12 @@ const MessageComponent = ({ node, changeVersion, isChild }) => {
             </div>
             {/* Render replies (if any) at the same level rather than nested */}
             {node.children.map(child => (
-                <MessageComponent key={child.getCurrentVersionData().message_id} node={child} changeVersion={changeVersion} isChild />
+                <MessageComponent key={child.getCurrentVersionData().message_id} node={child} isChild={true} />
             ))}
+            {currentVersionData.message_id}
+            <div>currentVersion: {currentVersion}</div>
+            {/*<div>version: {version}</div>*/}
+            <br/>
         </div>
     );
 };
@@ -164,21 +175,22 @@ const MessageComponent = ({ node, changeVersion, isChild }) => {
 const ChatComponent = ({data, stream}) => {
     // console.log("data", data);
     const root = buildTree(data); // build the tree from data
-    // const lastMessage = root.getLastChild();
+    const lastMessage = root?.getLastChild();
     // const lastMessageData = lastMessage.getCurrentVersionData();
     // const lastMessageDataPath = lastMessage.getPathToCurrent();
-    const [version, setVersion] = React.useState(1);
-    const lastMessageForVersion = root?.getLastChildForVersion(version);
+    // const [version, setVersion] = React.useState(1);
+    // const lastMessageForVersion = root?.getLastChildForVersion(version);
 
     console.log("root", root);
 
     return (
         <div>
-            {root && <MessageComponent node={root} changeVersion={setVersion} />}
-            {/*{root && <div>{lastMessage.getCurrentVersionData().text}</div>}*/}
+            {root && <MessageComponent node={root} isChild={false}/>}
+            {root && <div>{lastMessage.getCurrentVersionData().text}</div>}
             {/*{root && lastMessageData && <div>{lastMessageData.text}</div> }*/}
             {/*{root && lastMessageDataPath && <div>{lastMessageDataPath.map(node => node.getCurrentVersionData().text).join(' >> ')}</div>}*/}
-            {root && lastMessageForVersion && <div>{lastMessageForVersion.getCurrentVersionData().text}</div>}
+            {/*{root && lastMessageForVersion && <div>{lastMessageForVersion.getCurrentVersionData().text}</div>}*/}
+            {/*{root && lastMessageForVersion && <div>{lastMessageForVersion.getCurrentVersionData().message_id}</div>}*/}
             {/*<div>{version}</div>*/}
 
             <div className="stream message">
