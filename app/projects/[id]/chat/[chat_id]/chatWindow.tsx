@@ -6,7 +6,9 @@ import {useManualServerSentEvents} from "@/hooks/useManualServerSentEvents";
 import {createClientComponentClient} from "@supabase/auth-helpers-nextjs";
 import {Database} from "@/types/supabase";
 import RealTimeM from "@/app/projects/[id]/chat/[chat_id]/test/RealTimeM";
-import MessageViewerComponent from "@/app/projects/[id]/chat/[chat_id]/MessageTreeComponent";
+import ChatComponent from "@/app/projects/[id]/chat/[chat_id]/messageNode";
+import ChatStream from "@/app/projects/[id]/chat/[chat_id]/chatStream";
+// import MessageViewerComponent from "@/app/projects/[id]/chat/[chat_id]/MessageTreeComponent";
 
 interface ChatMessage {
     id: string; // Unique identifier for each message
@@ -49,6 +51,7 @@ export default function ChatWindow({params}: { params: { id: string } }) {
     // const [serverPosts, setServerPosts] = useState([]); // Use state to hold server posts
     const [isLoading, setIsLoading] = useState(true);
     const [messageTree, setMessageTree] = useState([]);
+    const [chatData, setChatData] = useState([]); // Use state to hold server posts
 
     console.log("params.id", params.chat_id)
 
@@ -96,7 +99,8 @@ export default function ChatWindow({params}: { params: { id: string } }) {
 
             if (data) {
                 // setServerPosts(data);
-                constructMessageTree(data);
+                // constructMessageTree(data);
+                setChatData(data);
             }
             if (error) {
                 console.error("Error fetching chat messages:", error);
@@ -106,34 +110,6 @@ export default function ChatWindow({params}: { params: { id: string } }) {
 
         fetchData();
     }, []);
-
-    const constructMessageTree = (messages) => {
-        const messageMap = new Map();
-        messages.forEach((msg) => {
-            messageMap.set(msg.message_id, new MessageNode(msg));
-        });
-
-        // Build the tree
-        const rootMessages = [];
-        messages.forEach((msg) => {
-            const node = messageMap.get(msg.message_id);
-            if (msg.previous_message_id) {
-                const parentNode = messageMap.get(msg.previous_message_id);
-                parentNode.addReply(node);
-            } else {
-                rootMessages.push(node);
-            }
-            if (msg.version_number) {
-                const parentNode = messageMap.get(msg.previous_message_id);
-                parentNode.addVersion(node);
-            }
-        });
-
-        console.log("rootMessages", rootMessages);
-
-
-        setMessageTree(rootMessages);
-    };
 
 
     // if (isLoading) {
@@ -149,17 +125,9 @@ export default function ChatWindow({params}: { params: { id: string } }) {
                     {/*<ChatComponent/>*/}
                 </div>
 
-                {messageTree && messageTree.length > 0 ? (
-                    // <RealTimeM messageTree={messageTree} combinedMessages={combinedMessages} />
-                    <MessageViewerComponent messageTree={messageTree} />
-                ) : isLoading ? (
-                    <div>Loading chat messages...</div>
-                ) : (
-                    <div>No chat messages found</div>
-                )}
-                {/*/!*<ChatComponent/>*!/*/}
-                {/*<div className="mt-4 p-2 bg-gray-100 rounded shadow"*/}
-                {/*     dangerouslySetInnerHTML={{__html: combinedMessages}}/>*/}
+                <ChatComponent data={chatData} stream={combinedMessages}/>
+                {/*<ChatStream/>*/}
+
 
                 {/*Chat Messages Area*/}
                 <div className="p-5 bg-gray-100 overflow-hidden">
@@ -185,6 +153,9 @@ export default function ChatWindow({params}: { params: { id: string } }) {
                 {/*>*/}
                 {/*    Send*/}
                 {/*</button>*/}
+
+                {/*<div className="mt-4 p-2 bg-gray-100 rounded shadow"*/}
+                {/*     dangerouslySetInnerHTML={{__html: combinedMessages}}/>*/}
 
 
                 {/* Input area */}

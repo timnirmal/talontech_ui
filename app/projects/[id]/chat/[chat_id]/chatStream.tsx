@@ -2,7 +2,7 @@
 import React, {useMemo, useState} from 'react';
 import {useManualServerSentEvents} from '@/hooks/useManualServerSentEvents';
 
-const ChatComponent: React.FC = () => {
+const ChatStream: React.FC = () => {
     const [messageText, setMessageText] = useState("What's on your mind?");
 
     const {
@@ -35,4 +35,4 @@ const ChatComponent: React.FC = () => {
     );
 };
 
-export default ChatComponent;
+export default ChatStream;
