@@ -8,6 +8,8 @@ import {Database} from "@/types/supabase";
 import RealTimeM from "@/app/projects/[id]/chat/[chat_id]/test/RealTimeM";
 import ChatComponent from "@/app/projects/[id]/chat/[chat_id]/messageNode";
 import ChatStream from "@/app/projects/[id]/chat/[chat_id]/chatStream";
+import {AuthContext} from "@/components/AuthProvider";
+
 // import MessageViewerComponent from "@/app/projects/[id]/chat/[chat_id]/MessageTreeComponent";
 
 interface ChatMessage {
@@ -52,6 +54,10 @@ export default function ChatWindow({params}: { params: { id: string } }) {
     const [isLoading, setIsLoading] = useState(true);
     const [messageTree, setMessageTree] = useState([]);
     const [chatData, setChatData] = useState([]); // Use state to hold server posts
+    const [lastMessageId, setLastMessageId] = useState(null);
+
+    // get user and accessToken from AuthProvider
+    const {accessToken, user} = React.useContext(AuthContext);
 
     console.log("params.id", params.chat_id)
 
@@ -92,8 +98,12 @@ export default function ChatWindow({params}: { params: { id: string } }) {
             const {data, error} = await supabase
                 .from('chat_message')
                 .select()
-                .eq('chat_id', params.chat_id)
+                // .eq('chat_id', params.chat_id)
 
+            console.log("data", data);
+            console.log("data", data);
+            console.log("data", data);
+            console.log("data", data);
             console.log("data", data);
             console.log("error", error);
 
@@ -111,6 +121,26 @@ export default function ChatWindow({params}: { params: { id: string } }) {
         fetchData();
     }, []);
 
+    const insertIntoSupabase = async () => {
+        console.log("Inserting into Supabase")
+        console.log("chat_id", params.chat_id)
+        console.log("user_id", user.id)
+        // original_message_id -
+        // const { data, error } = await supabase
+        //     .from('chat_message')
+        //     .insert([
+        //         { chat_id: params.chat_id, user_id: 'timnirmal', text: messageText }
+        //     ]);
+        //
+        // if (error) console.error('Error inserting into Supabase:', error);
+        // else console.log('Inserted into Supabase:', data);
+    };
+
+    const handleSendClick = async () => {
+        // await startFetching();
+        await insertIntoSupabase();
+    };
+
 
     // if (isLoading) {
     //     return <div>Loading chat messages...</div>; // Display a loading message or spinner
@@ -124,6 +154,9 @@ export default function ChatWindow({params}: { params: { id: string } }) {
                 <div className="container mx-auto px-4">
                     {/*<ChatComponent/>*/}
                 </div>
+
+
+                {console.log("chat data", chatData)}
 
                 <ChatComponent data={chatData} stream={combinedMessages}/>
                 {/*<ChatStream/>*/}
@@ -148,15 +181,6 @@ export default function ChatWindow({params}: { params: { id: string } }) {
                     </div>
                 </div>
 
-                {/*<button className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded"*/}
-                {/*        onClick={handleFileChange}*/}
-                {/*>*/}
-                {/*    Send*/}
-                {/*</button>*/}
-
-                {/*<div className="mt-4 p-2 bg-gray-100 rounded shadow"*/}
-                {/*     dangerouslySetInnerHTML={{__html: combinedMessages}}/>*/}
-
 
                 {/* Input area */}
                 <div className="p-5 bg-gray-100">
@@ -177,7 +201,7 @@ export default function ChatWindow({params}: { params: { id: string } }) {
                         <input type="text" className="flex-1 p-2 rounded border border-gray-300"
                                placeholder="Type a message..." onChange={(e) => setMessageText(e.target.value)}/>
                         <button className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded"
-                                onClick={startFetching}
+                                onClick={handleSendClick}
                         >
                             Send
                         </button>
