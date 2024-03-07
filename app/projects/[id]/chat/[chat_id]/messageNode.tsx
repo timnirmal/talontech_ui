@@ -9,8 +9,9 @@ class MessageNode {
     }
 
     addVersion(data) {
+        // this.versions[data.version] = data;
+        // this.currentVersion = data.version; // Update to latest version
         this.versions[data.version] = data;
-        this.currentVersion = data.version; // Update to latest version
     }
 
     setCurrentVersion(version) {
@@ -24,7 +25,10 @@ class MessageNode {
     }
 
     addChild(childNode) {
-        this.children.push(childNode);
+        // this.children.push(childNode);
+        if (childNode.currentVersion === 1) {
+            this.children.push(childNode);
+        }
     }
 }
 
@@ -33,19 +37,27 @@ const buildTree = (data) => {
     const nodes = {};
     let root = null;
 
+// First pass to create nodes
     data.forEach(item => {
-        let id = item.original_message_id || item.message_id;
+        nodes[item.message_id] = new MessageNode(item);
+    });
 
-        if (!nodes[id]) {
-            nodes[id] = new MessageNode(item);
-        } else {
-            nodes[id].addVersion(item);
+    // Second pass to associate versions and set up the tree structure
+    data.forEach(item => {
+        if (item.original_message_id) {
+            // If original_message_id is present, it's a version of an existing message
+            const originalNode = nodes[item.original_message_id];
+            originalNode.addVersion(item);
+            nodes[item.message_id].currentVersion = item.version; // Set the current version
+        } else if (item.previous_message_id) {
+            // If previous_message_id is present, it's a child of another message
+            const parentNode = nodes[item.previous_message_id];
+            parentNode.addChild(nodes[item.message_id]);
         }
 
-        if (item.previous_message_id && nodes[item.previous_message_id]) {
-            nodes[item.previous_message_id].addChild(nodes[id]);
-        } else {
-            root = nodes[id];
+        if (!item.previous_message_id && item.version === 1) {
+            // This is the root of the tree
+            root = nodes[item.message_id];
         }
     });
 
