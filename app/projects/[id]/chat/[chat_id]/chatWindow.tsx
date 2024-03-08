@@ -161,7 +161,7 @@ export default function ChatWindow({params}: { params: { id: string } }) {
                 </div>
 
 
-                {console.log("chat data", chatData)}
+                {/*{console.log("chat data", chatData)}*/}
 
                 <ChatComponent data={chatData} stream={combinedMessages} setLastMessage={setLastMessage} lastMessage={lastMessage}/>
                 {/*<ChatStream/>*/}

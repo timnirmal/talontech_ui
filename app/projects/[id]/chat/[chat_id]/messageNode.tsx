@@ -1,5 +1,7 @@
 // MessageNode class updated to handle versions
 import React, {useEffect, useState} from "react";
+import { Database } from "@/types/supabase";
+import {createClientComponentClient} from "@supabase/auth-helpers-nextjs";
 
 class MessageNode {
     constructor(data) {
@@ -36,6 +38,17 @@ class MessageNode {
             return this;
         }
         return this.children[this.children.length - 1].getLastChild();
+    }
+
+    findNodeById(id) {
+        if (this.versions[this.currentVersion].message_id === id) {
+            return this;
+        }
+        for (let child of this.children) {
+            let found = child.findNodeById(id);
+            if (found) return found;
+        }
+        return null; // Not found
     }
 
 }
@@ -99,6 +112,8 @@ const MessageComponent = ({ node, isChild, updateLastMessage }) => {
 
     };
 
+    // console.log("node currentVersionData", node);
+    // console.log("node currentVersionData", typeof node);
     const currentVersionData = node.getCurrentVersionData();
 
     const renderVersionControls = (node) => {
@@ -149,6 +164,7 @@ const ChatComponent = ({data, stream, setLastMessage, lastMessage}) => {
     // const root = buildTree(data); // build the tree from data
     const [messageTree, setMessageTree] = useState(null);
     // const lastMessage = root?.getLastChild();
+    const supabase = createClientComponentClient<Database>();
 
     const [loading, setLoading] = useState(true);
 
@@ -163,6 +179,60 @@ const ChatComponent = ({data, stream, setLastMessage, lastMessage}) => {
         }
     }, [data]); // Depend on 'data' prop
 
+    useEffect(() => {
+        const channel = supabase.channel('realtime chats')
+            .on("postgres_changes", {
+                event: "INSERT",
+                schema: "public",
+                table: "chat_message"
+            }, (payload) => {
+                console.log("Current Tree");
+                console.log(messageTree);
+                // console.log(currentTree);
+                console.log("Insert payload", payload.new);
+                setMessageTree(currentTree => {
+                    // Assuming currentTree is the root node of the tree
+                    if (!payload.new.previous_message_id && !payload.new.original_message_id) {
+                        console.log("Root message insertion");
+                        // Root message insertion
+                        const rootNode = new MessageNode(payload.new);
+                        currentTree.children.push(rootNode); // Consider updating logic if root nodes are handled differently
+                    } else if (payload.new.original_message_id) {
+                        console.log("New version of an existing message");
+                        // New version of an existing message
+                        const originalNode = currentTree.findNodeById(payload.new.original_message_id);
+                        if (originalNode) {
+                            originalNode.addVersion(payload.new);
+                        }
+                    } else if (payload.new.previous_message_id) {
+                        console.log("Reply to an existing message");
+                        // Reply to an existing message
+                        const parentNode = currentTree.findNodeById(payload.new.previous_message_id);
+                        if (parentNode) {
+                            console.log("Parent Node", parentNode);
+                            const childNode = new MessageNode(payload.new);
+                            console.log("Child Node", childNode);
+                            parentNode.addChild(childNode);
+                            console.log("Parent Node after adding child", parentNode);
+                        }
+                    }
+                    // Return a new tree instance if necessary to trigger re-render
+                    return { ...currentTree };
+                });
+            })
+            .subscribe();
+
+        return () => supabase.removeChannel(channel);
+    }, [supabase]);
+
+    useEffect(() => {
+        // Update lastMessage on messageTree changes
+        if (messageTree) {
+            const lastMsg = messageTree.getLastChild().getCurrentVersionData();
+            setLastMessage(lastMsg);
+        }
+    }, [messageTree]);
+
     if (!messageTree) {
         return <div>Loading...</div>; // or any other placeholder you see fit
     }
@@ -170,9 +240,6 @@ const ChatComponent = ({data, stream, setLastMessage, lastMessage}) => {
     const updateLastMessage = (newLastMessage) => {
         setLastMessage(newLastMessage);
     };
-
-
-
 
 
     return (
