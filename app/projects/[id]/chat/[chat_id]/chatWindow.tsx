@@ -55,6 +55,8 @@ export default function ChatWindow({params}: { params: { id: string } }) {
     const [messageTree, setMessageTree] = useState([]);
     const [chatData, setChatData] = useState([]); // Use state to hold server posts
     const [lastMessageId, setLastMessageId] = useState(null);
+    const [lastMessage, setLastMessage] = useState(null);
+    const [editedMessage, setEditedMessage] = useState(false);
 
     // get user and accessToken from AuthProvider
     const {accessToken, user} = React.useContext(AuthContext);
@@ -121,24 +123,27 @@ export default function ChatWindow({params}: { params: { id: string } }) {
         fetchData();
     }, []);
 
-    const insertIntoSupabase = async () => {
+    const insertNewIntoSupabase = async () => {
         console.log("Inserting into Supabase")
         console.log("chat_id", params.chat_id)
         console.log("user_id", user.id)
+        console.log("text", messageText)
+        console.log("version",1)
+        console.log("previous_message_id", lastMessage.message_id)
         // original_message_id -
-        // const { data, error } = await supabase
-        //     .from('chat_message')
-        //     .insert([
-        //         { chat_id: params.chat_id, user_id: 'timnirmal', text: messageText }
-        //     ]);
-        //
-        // if (error) console.error('Error inserting into Supabase:', error);
-        // else console.log('Inserted into Supabase:', data);
+        const { data, error } = await supabase
+            .from('chat_message')
+            .insert([
+                { chat_id: params.chat_id, user_id: user.id, text: messageText, version: 1, previous_message_id: lastMessage.message_id }
+            ]);
+
+        if (error) console.error('Error inserting into Supabase:', error);
+        else console.log('Inserted into Supabase:', data);
     };
 
     const handleSendClick = async () => {
         // await startFetching();
-        await insertIntoSupabase();
+        await insertNewIntoSupabase();
     };
 
 
@@ -158,7 +163,7 @@ export default function ChatWindow({params}: { params: { id: string } }) {
 
                 {console.log("chat data", chatData)}
 
-                <ChatComponent data={chatData} stream={combinedMessages}/>
+                <ChatComponent data={chatData} stream={combinedMessages} setLastMessage={setLastMessage} lastMessage={lastMessage}/>
                 {/*<ChatStream/>*/}
 
 

@@ -1,5 +1,5 @@
 // MessageNode class updated to handle versions
-import React from "react";
+import React, {useEffect, useState} from "react";
 
 class MessageNode {
     constructor(data) {
@@ -38,38 +38,6 @@ class MessageNode {
         return this.children[this.children.length - 1].getLastChild();
     }
 
-    getPathToCurrent() {
-        let path = [this];
-        let current = this;
-        while (current.children.length > 0) {
-            let next = current.children.find(child => child.currentVersion === current.currentVersion);
-            if (!next) break; // If there's no child with the same version, stop the loop
-            path.push(next);
-            current = next;
-        }
-        return path; // This returns an array of MessageNodes leading to the current version
-    }
-
-    getLastChildForVersion(version) {
-        let lastChild = this;
-        while (lastChild.children.length > 0) {
-            // Filter children by the specified version
-            const childrenOfVersion = lastChild.children.filter(
-                child => child.versions[child.currentVersion].version === version
-            );
-
-            // If there are no children with the specified version, break
-            if (childrenOfVersion.length === 0) {
-                break;
-            }
-
-            // Update the lastChild reference to the last child of the specified version
-            lastChild = childrenOfVersion[childrenOfVersion.length - 1];
-        }
-        return lastChild;
-    }
-
-
 }
 
 // Utility function to build the tree from the data
@@ -106,12 +74,14 @@ const buildTree = (data) => {
 
 // Recursive React component to render the tree
 // Recursive React component to render the tree with only one version visible
-const MessageComponent = ({ node, isChild }) => {
+const MessageComponent = ({ node, isChild, updateLastMessage }) => {
     const versionNumbers = Object.keys(node.versions).map(Number).sort((a, b) => a - b);
     const [currentVersion, setCurrentVersion] = React.useState(node.currentVersion);
 
     // Inside MessageComponent
     React.useEffect(() => {
+        console.log("UseEffect called in MessageComponent");
+        console.log("node.currentVersion", node);
         // Listen to changes in version and update local state to force re-render
         setCurrentVersion(node.currentVersion);
     }, [node.currentVersion]);
@@ -125,7 +95,8 @@ const MessageComponent = ({ node, isChild }) => {
             node.setCurrentVersion(versionNumbers[newVersionIndex]);
         }
 
-        // changeVersion(versionNumbers[newVersionIndex]);
+        updateLastMessage(node.getCurrentVersionData());
+
     };
 
     const currentVersionData = node.getCurrentVersionData();
@@ -159,7 +130,7 @@ const MessageComponent = ({ node, isChild }) => {
             </div>
             {/* Render replies (if any) at the same level rather than nested */}
             {node.children.map(child => (
-                <MessageComponent key={child.getCurrentVersionData().message_id} node={child} isChild={true} />
+                <MessageComponent key={child.getCurrentVersionData().message_id} node={child} isChild={true} updateLastMessage={updateLastMessage}/>
             ))}
             {currentVersionData.message_id}
             <div>currentVersion: {currentVersion}</div>
@@ -172,26 +143,46 @@ const MessageComponent = ({ node, isChild }) => {
 
 
 // Main Chat component that uses the tree
-const ChatComponent = ({data, stream}) => {
+const ChatComponent = ({data, stream, setLastMessage, lastMessage}) => {
+    console.log("Intial data", data);
     // console.log("data", data);
-    const root = buildTree(data); // build the tree from data
-    const lastMessage = root?.getLastChild();
-    // const lastMessageData = lastMessage.getCurrentVersionData();
-    // const lastMessageDataPath = lastMessage.getPathToCurrent();
-    // const [version, setVersion] = React.useState(1);
-    // const lastMessageForVersion = root?.getLastChildForVersion(version);
+    // const root = buildTree(data); // build the tree from data
+    const [messageTree, setMessageTree] = useState(null);
+    // const lastMessage = root?.getLastChild();
 
-    console.log("root", root);
+    const [loading, setLoading] = useState(true);
+
+    console.log("messageTree", messageTree);
+
+    useEffect(() => {
+        if (data.length > 0) {
+            const builtTree = buildTree(data);
+            setMessageTree(builtTree); // Update the message tree
+            const lastMsg = builtTree.getLastChild().getCurrentVersionData();
+            setLastMessage(lastMsg); // Update the last message
+        }
+    }, [data]); // Depend on 'data' prop
+
+    if (!messageTree) {
+        return <div>Loading...</div>; // or any other placeholder you see fit
+    }
+
+    const updateLastMessage = (newLastMessage) => {
+        setLastMessage(newLastMessage);
+    };
+
+
+
+
 
     return (
         <div>
-            {root && <MessageComponent node={root} isChild={false}/>}
-            {root && <div>{lastMessage.getCurrentVersionData().text}</div>}
-            {/*{root && lastMessageData && <div>{lastMessageData.text}</div> }*/}
-            {/*{root && lastMessageDataPath && <div>{lastMessageDataPath.map(node => node.getCurrentVersionData().text).join(' >> ')}</div>}*/}
-            {/*{root && lastMessageForVersion && <div>{lastMessageForVersion.getCurrentVersionData().text}</div>}*/}
-            {/*{root && lastMessageForVersion && <div>{lastMessageForVersion.getCurrentVersionData().message_id}</div>}*/}
-            {/*<div>{version}</div>*/}
+            <MessageComponent node={messageTree} isChild={false} updateLastMessage={updateLastMessage} />
+            {lastMessage && (
+                <div>
+                    <strong>Last Message: </strong>{lastMessage.text}
+                </div>
+            )}
 
             <div className="stream message">
                 <div className="flex items-start space-x-2 mb-4">
