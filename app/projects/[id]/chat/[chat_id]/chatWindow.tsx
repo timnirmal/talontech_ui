@@ -28,6 +28,19 @@ interface ChatWindowProps {
     };
 }
 
+interface LLMProps {
+    llm_id: string;
+    name: string;
+    version: string;
+}
+
+// create sample LLM with LLMProps
+const pickedLLM: LLMProps = {
+    llm_id: "8db18f56-772b-4275-8316-a127a0617f45",
+    name: "Test gpt-4-turbo-preview",
+    version: "1"
+}
+
 
 const MessageComponent = ({
                               node,
@@ -133,6 +146,10 @@ export default function ChatWindow({params}: ChatWindowProps) {
     const [doesStateChange, setDoesStateChange] = useState(false);
     const [realLastMessage, setRealLastMessage] = useState(null);
 
+    // create sample LLM with LLMProps
+    const [pickedLLM, setPickedLLM] = useState<LLMProps | null>(null);
+
+
     const {messageTree, addMessage, deleteMessage, initializeOrUpdateTree} = useChat();
 
     // const { branch, lastMessage } = getBranchAndLastMessageFromTree();
@@ -140,7 +157,7 @@ export default function ChatWindow({params}: ChatWindowProps) {
     // get user and accessToken from AuthProvider
     const {accessToken, user} = React.useContext(AuthContext);
 
-    console.log("params.id", params.chat_id)
+    // console.log("params.id", params.chat_id)
 
     const handleImageUpload = (fileName, imageUrl) => {
         // Update the state with the new image URL
@@ -181,12 +198,15 @@ export default function ChatWindow({params}: ChatWindowProps) {
                 .select()
                 .eq('chat_id', params.chat_id)
 
-            console.log("data", data);
-            console.log("error", error);
+            // console.log("data", data);
+            // console.log("error", error);
 
             if (data) {
-                setChatData(data);
-                initializeOrUpdateTree(data);
+                if (data.length > 0) {
+                    // console.log("Data length", data.length);
+                    setChatData(data);
+                    initializeOrUpdateTree(data);
+                }
             }
             if (error) {
                 console.error("Error fetching chat messages:", error);
@@ -314,9 +334,37 @@ export default function ChatWindow({params}: ChatWindowProps) {
         else console.log('Inserted into Supabase:', data);
     };
 
+    const insertNewLLMResponseIntoSupabase = async () => {
+        console.log("Inserting into Supabase")
+        console.log("chat_id", params.chat_id)
+        console.log("llm_id", user.id)
+        console.log("text", "This is a response from the LLM")
+        console.log("version", 1)
+        console.log("previous_message_id", lastMessage.message_id)
+        // original_message_id -
+        const {data, error} = await supabase
+            .from('chat_message')
+            .insert([
+                {
+                    chat_id: params.chat_id,
+                    user_id: user.id,
+                    text: "This is a response from the LLM",
+                    version: 1,
+                    previous_message_id: realLastMessage?.message_id
+                }
+            ]);
+
+        // if (error) console.error('Error inserting into Supabase:', error);
+        // else console.log('Inserted into Supabase:', data);
+        console.log('Inserted into Supabase:', data);
+    };
+
     const handleSendClick = async () => {
         // await startFetching();
         await insertNewIntoSupabase();
+        // await startFetching();
+        // await insertNewIntoSupabase();
+        await insertNewLLMResponseIntoSupabase();
     };
 
 
@@ -372,6 +420,21 @@ export default function ChatWindow({params}: ChatWindowProps) {
                     <button onClick={handleSendClick}>Add Message</button>
                     {/*<button onClick={handleAddClick}>Test Message</button>*/}
                 </div>
+
+                <div className="stream message">
+                    <div className="flex items-start space-x-2 mb-4">
+                        <img src={'/profile_image.png'} alt="Stream"
+                             className="w-10 h-10 rounded-full object-cover"/>
+                        <div className="flex flex-col rounded bg-gray-100 p-2 shadow">
+                            <div className="font-bold">{"Stream"}</div>
+                            <div className="stream-content" dangerouslySetInnerHTML={{__html: combinedMessages}}/>
+                        </div>
+                    </div>
+                </div>
+
+                {/*<ChatComponent data={chatData} stream={combinedMessages} setLastMessage={setLastMessage}*/}
+                {/*               lastMessage={lastMessage}/>*/}
+                {/*<ChatStream/>*/}
 
                 <div>Real lastMessage: {realLastMessage?.text}</div>
             </div>

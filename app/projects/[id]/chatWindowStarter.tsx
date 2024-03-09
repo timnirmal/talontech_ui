@@ -3,12 +3,16 @@
 import React, {useState} from 'react';
 import AddFilesIcon from "@/app/projects/[id]/chat/addFilesIcon";
 import {useRouter} from 'next/navigation';
+import {AuthContext} from "@/components/AuthProvider";
+import {createClientComponentClient} from "@supabase/auth-helpers-nextjs";
+import {Database} from "@/types/supabase";
 
 export default function ChatWindowStarter({params}: { params: { id: string } }) {
     const router = useRouter();
 
     const [currentFiles, setCurrentFiles] = useState({});
     const [messageText, setMessageText] = useState("")
+    const supabase = createClientComponentClient<Database>();
 
     const handleImageUpload = (fileName, imageUrl) => {
         // Update the state with the new image URL
@@ -61,17 +65,47 @@ export default function ChatWindowStarter({params}: { params: { id: string } }) 
             // console.log("urltopush", urltopush)
 
             router.push(`/projects/${params.id}/chat/${chat_id}`)
+
+            return chat_id
         } else {
             console.error('File upload failed with status', response.status);
         }
     };
 
-    function handleMessageSend() {
+    const {accessToken, user} = React.useContext(AuthContext);
+
+    const insertNewIntoSupabase = async (chat_id) => {
+        console.log("Inserting into Supabase")
+        console.log("chat_id", chat_id)
+        console.log("user_id", user.id)
+        console.log("text", messageText)
+        console.log("version", 1)
+        // console.log("previous_message_id", lastMessage.message_id)
+        // original_message_id -
+        const {data, error} = await supabase
+            .from('chat_message')
+            .insert([
+                {
+                    chat_id: chat_id,
+                    user_id: user.id,
+                    text: messageText,
+                    version: 1,
+                    // previous_message_id: realLastMessage?.message_id
+                }
+            ]);
+
+        if (error) console.error('Error inserting into Supabase:', error);
+        else console.log('Inserted into Supabase:', data);
+    };
+
+    async function handleMessageSend() {
         // create new chat, chat message, attach files
         // redirect to chat window
 
+        const chat_id = await uploadFile();
+        console.log("chat_id", chat_id)
+        await insertNewIntoSupabase(chat_id);
         // call uploadFile
-        uploadFile();
 
     }
 

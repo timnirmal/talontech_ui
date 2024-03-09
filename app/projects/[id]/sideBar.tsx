@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SidebarChats from "@/app/projects/[id]/sideBarChats";
 
 const Sidebar = ({isOpen, toggleSidebar, activeProjectId}) => {
     console.log(activeProjectId);
@@ -50,11 +51,12 @@ const Sidebar = ({isOpen, toggleSidebar, activeProjectId}) => {
 
             {/* Middle section for chat list */}
             <div className="flex-1 overflow-auto">
-                <ul className="p-2">
-                    {/* Placeholder for chat list items */}
-                    <li className="p-2 hover:bg-gray-700 cursor-pointer">Chat 1</li>
-                    <li className="p-2 hover:bg-gray-700 cursor-pointer">Chat 2</li>
-                </ul>
+                {/*<ul className="p-2">*/}
+                {/*    /!* Placeholder for chat list items *!/*/}
+                {/*    <li className="p-2 hover:bg-gray-700 cursor-pointer">Chat 1</li>*/}
+                {/*    <li className="p-2 hover:bg-gray-700 cursor-pointer">Chat 2</li>*/}
+                {/*</ul>*/}
+                <SidebarChats activeProjectId={activeProjectId}/>
             </div>
 
             {/* Bottom section with settings */}
