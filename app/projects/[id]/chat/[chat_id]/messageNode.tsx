@@ -13,7 +13,7 @@ export class MessageNode {
     data: MessageData;
     children: MessageNode[] = [];
     versions: MessageNode[] = [];
-    currentVersion: number = 0;
+    currentVersion: number = 1;
 
     constructor(message_id: string, data: MessageData) {
         this.message_id = message_id;
@@ -114,6 +114,7 @@ export const buildTree = (data: MessageData[]): MessageNode | null => {
     // If there are multiple root nodes, we choose the first one. Adjust as needed.
     return nodes[rootNodes[0].message_id];
 };
+
 
 // Function to add a new node to the tree. This should be called with the new message data
 export const addNewNode = (root: MessageNode, newData: MessageData): void => {

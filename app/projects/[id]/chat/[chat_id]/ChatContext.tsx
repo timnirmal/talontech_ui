@@ -18,6 +18,7 @@ interface ChatContextType {
     addMessage: (newData: MessageData) => void;
     deleteMessage: (messageId: string, version?: number) => void;
     initializeOrUpdateTree: (data: MessageData[]) => void;
+    handleVersionChange: (messageId: string, versionIndex: number) => void;
 }
 
 
@@ -31,11 +32,18 @@ export const useChat = (): ChatContextType => {
 };
 
 
-export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({children}) => {
     const [messageTree, setMessageTree] = useState<MessageNode | null>(null);
+
+    const setCurrentVersionForAllNodes = (node) => {
+        node.currentVersion = 1;
+        node.children.forEach(setCurrentVersionForAllNodes);
+        node.versions.forEach(setCurrentVersionForAllNodes);
+    };
 
     const initializeOrUpdateTree = useCallback((data: MessageData[]) => {
         const builtTree = buildTree(data);
+        setCurrentVersionForAllNodes(builtTree);
         setMessageTree(builtTree);
     }, []);
 
@@ -56,8 +64,30 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     }, [messageTree]);
 
+    const updateVersion = (node, messageId, versionIndex) => {
+        if (node.message_id === messageId) {
+            node.currentVersion = versionIndex;
+            return true; // Indicate that the node has been found and updated
+        }
+        for (let child of node.children) {
+            if (updateVersion(child, messageId, versionIndex)) {
+                return true;
+            }
+        }
+        return false; // Indicate that the node was not found in this branch
+    };
+
+    const handleVersionChange = useCallback((messageId: string, versionIndex: number) => {
+        if (messageTree) {
+            const clonedTree = JSON.parse(JSON.stringify(messageTree)); // Clone to ensure immutability
+            if (updateVersion(clonedTree, messageId, versionIndex)) {
+                setMessageTree(clonedTree); // Update the state to trigger re-render
+            }
+        }
+    }, [messageTree]);
+
     return (
-        <ChatContext.Provider value={{ messageTree, addMessage, deleteMessage, initializeOrUpdateTree }}>
+        <ChatContext.Provider value={{messageTree, addMessage, deleteMessage, initializeOrUpdateTree, handleVersionChange}}>
             {children}
         </ChatContext.Provider>
     );

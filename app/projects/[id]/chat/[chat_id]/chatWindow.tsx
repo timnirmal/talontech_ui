@@ -10,12 +10,8 @@ import ChatComponent from "@/app/projects/[id]/chat/[chat_id]/ChatOperations";
 import ChatStream from "@/app/projects/[id]/chat/[chat_id]/chatStream";
 import {AuthContext} from "@/components/AuthProvider";
 import {useChat} from './ChatContext';
-import {
-    // BranchResult,
-    MessageNode
-} from "@/app/projects/[id]/chat/[chat_id]/messageNode";
 
-const MessageComponent = ({ node }) => {
+const MessageComponent = ({node}) => {
     // State to track the index of the current version being displayed.
     const [versionIndex, setVersionIndex] = useState(-1);
 
@@ -40,26 +36,24 @@ const MessageComponent = ({ node }) => {
         setVersionIndex((prevIndex) => (prevIndex > -1 ? prevIndex - 1 : prevIndex));
     };
 
-    // Determine the children to display for the current version
-    // Assuming that if the version has children, they should be displayed
-    // Otherwise, fall back to displaying the base version's children
     const childrenToDisplay = currentVersionNode.children || node.children;
 
     return (
         <div>
             <br/>
+            <div>Version: {currentVersionNode.currentVersion}</div>
             <div>Message: {currentMessageData.text}</div>
             {node.versions.length > 0 && (
                 <div>
                     <button className="bg-gray-300 p-1 mr-3"
-                        onClick={showPreviousVersion} disabled={versionIndex === -1}>
+                            onClick={showPreviousVersion} disabled={versionIndex === -1}>
                         &lt; Prev
                     </button>
                     <span>
             Version {versionIndex + 2} of {node.versions.length + 1}
           </span>
                     <button className="bg-gray-300 p-1 ml-3"
-                        onClick={showNextVersion} disabled={versionIndex >= node.versions.length - 1}>
+                            onClick={showNextVersion} disabled={versionIndex >= node.versions.length - 1}>
                         Next &gt;
                     </button>
                 </div>
@@ -68,65 +62,13 @@ const MessageComponent = ({ node }) => {
             {childrenToDisplay.length > 0 && (
                 <div className="children">
                     {childrenToDisplay.map((childNode) => (
-                        <MessageComponent key={childNode.data.message_id} node={childNode} />
+                        <MessageComponent key={childNode.data.message_id} node={childNode}/>
                     ))}
                 </div>
             )}
         </div>
     );
 };
-
-
-// const MessageComponent = ({ node }: { node: MessageNode }) => {
-//     console.log("node", node.versions.text);
-//     // Determine the initial version to display - default to the latest version
-//     const [displayVersion, setDisplayVersion] = useState(node.currentVersion);
-//
-//     const messageData = node.versions[displayVersion];
-//
-//     // Handlers to navigate between versions
-//     const handlePrevVersion = () => {
-//         const sortedVersions = Object.keys(node.versions).map(Number).sort((a, b) => a - b);
-//         const currentIdx = sortedVersions.indexOf(displayVersion);
-//         if (currentIdx > 0) {
-//             setDisplayVersion(sortedVersions[currentIdx - 1]);
-//         }
-//     };
-//
-//     const handleNextVersion = () => {
-//         const sortedVersions = Object.keys(node.versions).map(Number).sort((a, b) => a - b);
-//         const currentIdx = sortedVersions.indexOf(displayVersion);
-//         if (currentIdx < sortedVersions.length - 1) {
-//             setDisplayVersion(sortedVersions[currentIdx + 1]);
-//         }
-//     };
-//
-//     // Check if there are multiple versions to navigate through
-//     const hasMultipleVersions = Object.keys(node.versions).length > 1;
-//
-//     return (
-//         <div>
-//             <div>
-//                 {/*{messageData.message_id}: {messageData.text} /!* Adjust to match your data structure *!/*/}
-//                 Message: {messageData.text} {/* Adjust to match your data structure */}
-//                 {hasMultipleVersions && (
-//                     <div>
-//                         <button onClick={handlePrevVersion}>&lt;</button>
-//                         Version {displayVersion}
-//                         <button onClick={handleNextVersion}>&gt;</button>
-//                     </div>
-//                 )}
-//             </div>
-//             {node.children.length > 0 && (
-//                 <div className="children">
-//                     {node.children.map(child => (
-//                         <MessageComponent key={child.getCurrentVersionData().message_id} node={child} />
-//                     ))}
-//                 </div>
-//             )}
-//         </div>
-//     );
-// };
 
 export default function ChatWindow({params}: { params: { id: string } }) {
     const [imageData, setImageData] = useState(null);
@@ -141,6 +83,7 @@ export default function ChatWindow({params}: { params: { id: string } }) {
     // const [lastMessage, setLastMessage] = useState(null);
     const [editedMessage, setEditedMessage] = useState(false);
     const [newMessageText, setNewMessageText] = useState('');
+    const [lastMessage, setLastMessage] = useState(null);
 
     const {messageTree, addMessage, deleteMessage, initializeOrUpdateTree} = useChat();
 
@@ -228,7 +171,7 @@ export default function ChatWindow({params}: { params: { id: string } }) {
                 event: 'UPDATE',
                 schema: 'public',
                 table: 'chat_message',
-            },  (payload) => {
+            }, (payload) => {
                 console.log("Update payload", payload.new);
                 // setMessages(currentMessages => [...currentMessages, payload.new]);
                 // const rootNode = new MessageNode(payload.new);
@@ -238,7 +181,7 @@ export default function ChatWindow({params}: { params: { id: string } }) {
                 event: 'DELETE',
                 schema: 'public',
                 table: 'chat_message',
-            },  (payload) => {
+            }, (payload) => {
                 console.log("Delete payload", payload.new);
                 // setMessages(currentMessages => [...currentMessages, payload.new]);
                 // const rootNode = new MessageNode(payload.new);
@@ -251,15 +194,6 @@ export default function ChatWindow({params}: { params: { id: string } }) {
             supabase.removeChannel(channel)
         }
     }, [])
-
-    // const [selectedBranch, setSelectedBranch] = useState<BranchResult | null>(null);
-
-    // useEffect(() => {
-    //     // Assuming `messageTree` is available in your `useChat` hook
-    //     const result = getBranchAndLastMessageFromTree();
-    //     setSelectedBranch(result);
-    // }, [getBranchAndLastMessageFromTree]);
-
 
     const insertNewIntoSupabase = async () => {
         console.log("Inserting into Supabase")
@@ -319,29 +253,19 @@ export default function ChatWindow({params}: { params: { id: string } }) {
         <div className="flex h-screen">
             {/* Chat Area */}
             <div className="flex-1 flex flex-col">
-                {/*<div className="chat-window">*/}
-                {/*    <h2>Chat Window for Project {params.id}</h2>*/}
-                {/*    {selectedBranch && selectedBranch.branch.length > 0 ? (*/}
-                {/*        selectedBranch.branch.map((node, index) => (*/}
-                {/*            // Display each message in the selected branch*/}
-                {/*            <div key={index}>*/}
-                {/*                <MessageComponent node={node}/>*/}
-                {/*            </div>*/}
-                {/*        ))*/}
-                {/*    ) : (*/}
-                {/*        <p>No messages to display</p>*/}
-                {/*    )}*/}
-                {/*</div>*/}
+                <div>lastMessage: {lastMessage}</div>
 
                 <div className="chat-window">
                     <h2>Chat Window for Project {params.id}</h2>
                     {console.log("messageTree in ui", messageTree)}
                     {messageTree ? (
-                        <MessageComponent node={messageTree}/>
+                        <MessageComponent node={messageTree} onRenderLastMessage={handleLastMessageRendered}/>
                     ) : (
                         <p>No messages to display</p>
                     )}
                 </div>
+
+                {lastMessageRendered && <div>Last message rendered: {lastMessageRendered.text}</div>}
 
                 <div className="flex-1 flex flex-col">
                     {/* Input for new message text */}
@@ -360,3 +284,5 @@ export default function ChatWindow({params}: { params: { id: string } }) {
     );
 }
 
+
+// https://chat.openai.com/c/9346606b-564e-4313-bb47-5fee9b99759b
