@@ -48,11 +48,19 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({children}
     }, []);
 
     const addMessage = useCallback((newData: MessageData) => {
+        console.log("addMessage", newData);
+        console.log("addMessage", newData);
+        console.log("addMessage", newData);
+        console.log("addMessage", newData);
+        console.log("addMessage", newData);
         if (messageTree) {
             addNewNode(messageTree, newData);
             // Force update to trigger re-render. This is a simplistic approach;
             // consider using a more sophisticated state management for larger applications.
             setMessageTree(Object.assign({}, messageTree));
+            console.log("New Message Tree", messageTree);
+        }else{
+        console.log("No message tree");
         }
     }, [messageTree]);
 

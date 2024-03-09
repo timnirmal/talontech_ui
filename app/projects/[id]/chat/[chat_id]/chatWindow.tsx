@@ -111,7 +111,6 @@ const MessageComponent = ({
                     ))}
                 </div>
             )}
-            <button>sdsdsd</button>
         </div>
     );
 };
@@ -125,8 +124,6 @@ export default function ChatWindow({params}: ChatWindowProps) {
     // const [serverPosts, setServerPosts] = useState([]); // Use state to hold server posts
     const [isLoading, setIsLoading] = useState(true);
     const [chatData, setChatData] = useState([]); // Use state to hold server posts
-    // const [lastMessageId, setLastMessageId] = useState(null);
-    // const [lastMessage, setLastMessage] = useState(null);
     const [editedMessage, setEditedMessage] = useState(false);
     const [newMessageText, setNewMessageText] = useState('');
 
@@ -204,53 +201,62 @@ export default function ChatWindow({params}: ChatWindowProps) {
         console.log("Calling useEffect for get updated chat messages")
         // console.log("ServerPosts", ServerPosts);
 
-        const channel = supabase.channel('realtime chats')
-            .on("postgres_changes", {
-                    event: "INSERT",
-                    schema: "public",
-                    table: "chat_message"
+        if (messageTree) {
+            const channel = supabase.channel('realtime chats')
+                .on("postgres_changes", {
+                        event: "INSERT",
+                        schema: "public",
+                        table: "chat_message"
+                    }, (payload) => {
+                        console.log("Insert payload", payload.new);
+                        addMessage(payload.new);
+                        setRealLastMessage(payload.new)
+                        setNewMessageText('')
+                    }
+                )
+                .on('postgres_changes', {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'chat_message',
                 }, (payload) => {
-                    console.log("Insert payload", payload.new);
-                    addMessage(payload.new);
-                    setNewMessageText('')
-                    // setMessages(currentMessages => [...currentMessages, payload.new]);
-                    // const rootNode = new MessageNode(payload.new);
-                    // setLocalMessageTree(currentTree => [...currentTree, rootNode]);
-                }
-            )
-            .on('postgres_changes', {
-                event: 'UPDATE',
-                schema: 'public',
-                table: 'chat_message',
-            }, (payload) => {
-                console.log("Update payload", payload.new);
-                // setMessages(currentMessages => [...currentMessages, payload.new]);
-                // const rootNode = new MessageNode(payload.new);
-                // setLocalMessageTree(currentTree => [...currentTree, rootNode]);
-            })
-            .on('postgres_changes', {
-                event: 'DELETE',
-                schema: 'public',
-                table: 'chat_message',
-            }, (payload) => {
-                console.log("Delete payload", payload.new);
-                // setMessages(currentMessages => [...currentMessages, payload.new]);
-                // const rootNode = new MessageNode(payload.new);
-                // setLocalMessageTree(currentTree => [...currentTree, rootNode]);
-            })
-            .subscribe();
+                    console.log("Update payload", payload.new);
+                })
+                .on('postgres_changes', {
+                    event: 'DELETE',
+                    schema: 'public',
+                    table: 'chat_message',
+                }, (payload) => {
+                    console.log("Delete payload", payload.new);
+                })
+                .subscribe();
 
-        return () => {
-            console.log("Unsubscribing")
-            supabase.removeChannel(channel)
+            return () => {
+                console.log("Unsubscribing")
+                supabase.removeChannel(channel)
+            }
         }
-    }, [])
+    }, [messageTree, addMessage])
 
     useEffect(() => {
         if (lastMessageRef.current) {
             setCurrentMessage(lastMessageRef.current);
         }
     }, [lastMessageRef.current]);
+
+    const handleAddClick = () => {
+        const newMessage = {
+            chat_id: "7e1a0e0e-cb5a-4aac-955a-e1f8c06cfc3a",
+            user_id: "89e9b16c-49c3-49a4-88bf-3ccdac429d4f",
+            llm_id: null,
+            text: newMessageText,
+            original_message_id: null,
+            version: 1,
+            previous_message_id: "937f94b3-d962-415e-8d0f-f985e1435f61",
+        };
+        addMessage(newMessage);
+        setNewMessageText(''); // Clear the input field after adding
+    };
+
 
     const lastMessageMemo = useMemo(() => {
         // Function to find the last message in your tree
@@ -273,30 +279,22 @@ export default function ChatWindow({params}: ChatWindowProps) {
         }
     }, [lastMessageMemo]);
 
-    // if (!doesStateChange) {
-    //     setRealLastMessage(lastMessageRef.current)
-    // }else {
-    //     setRealLastMessage(lastMessage)
-    // }
-
     useEffect(() => {
         // console.log("lastMessageRef.current", lastMessageRef.current);  // after that this is right
         // console.log("lastMessage", lastMessage); // at first render, lastMessage is right
         if (doesStateChange) {
             setRealLastMessage(lastMessageRef.current)
-        }
-        else {
+        } else {
             setRealLastMessage(lastMessage)
         }
-    }, [lastMessageRef.current,lastMessage, doesStateChange, realLastMessage])
-
+    }, [lastMessageRef.current, lastMessage, doesStateChange, realLastMessage])
 
 
     const insertNewIntoSupabase = async () => {
         console.log("Inserting into Supabase")
         console.log("chat_id", params.chat_id)
         console.log("user_id", user.id)
-        console.log("text", messageText)
+        console.log("text", newMessageText)
         console.log("version", 1)
         console.log("previous_message_id", lastMessage.message_id)
         // original_message_id -
@@ -306,9 +304,9 @@ export default function ChatWindow({params}: ChatWindowProps) {
                 {
                     chat_id: params.chat_id,
                     user_id: user.id,
-                    text: messageText,
+                    text: newMessageText,
                     version: 1,
-                    previous_message_id: lastMessage.message_id
+                    previous_message_id: realLastMessage?.message_id
                 }
             ]);
 
@@ -321,20 +319,6 @@ export default function ChatWindow({params}: ChatWindowProps) {
         await insertNewIntoSupabase();
     };
 
-    const handleAddClick = () => {
-
-        const newMessage = {
-            chat_id: "7e1a0e0e-cb5a-4aac-955a-e1f8c06cfc3a",
-            user_id: "89e9b16c-49c3-49a4-88bf-3ccdac429d4f",
-            llm_id: null,
-            text: newMessageText,
-            original_message_id: null,
-            version: 1,
-            previous_message_id: "937f94b3-d962-415e-8d0f-f985e1435f61",
-        };
-        addMessage(newMessage);
-        setNewMessageText(''); // Clear the input field after adding
-    };
 
     const handleDeleteClick = (messageId) => {
         deleteMessage(messageId);
@@ -353,8 +337,6 @@ export default function ChatWindow({params}: ChatWindowProps) {
     const updateDoesStateChange = () => {
         setDoesStateChange(true);
     }
-
-
 
 
     return (
@@ -388,17 +370,10 @@ export default function ChatWindow({params}: ChatWindowProps) {
                     />
                     {/* Button to add a new message */}
                     <button onClick={handleSendClick}>Add Message</button>
+                    {/*<button onClick={handleAddClick}>Test Message</button>*/}
                 </div>
 
-                {/*<div>currentMessage: {currentMessage?.text}</div>*/}
-                {/*<div>currentMessage: {lastMessageRef.current?.text}</div>*/}
-                {/*<div>lastMessage: {lastMessage?.text}</div>*/}
                 <div>Real lastMessage: {realLastMessage?.text}</div>
-                {/*{doesStateChange ?*/}
-                {/*    <div>State Changed</div>*/}
-                {/*    :*/}
-                {/*    <div>State Not Changed</div>*/}
-                {/*}*/}
             </div>
         </div>
     );
@@ -406,3 +381,4 @@ export default function ChatWindow({params}: ChatWindowProps) {
 
 
 // https://chat.openai.com/c/9346606b-564e-4313-bb47-5fee9b99759b
+
