@@ -15,23 +15,68 @@ import {
     MessageNode
 } from "@/app/projects/[id]/chat/[chat_id]/messageNode";
 
-const MessageComponent = ({ node }: { node: MessageNode }) => {
-    const messageData = node.getCurrentVersionData();
+const MessageComponent = ({ node }) => {
+    // State to track the index of the current version being displayed.
+    const [versionIndex, setVersionIndex] = useState(-1);
+
+    // Helper to get the node (version or base) currently being displayed.
+    const getCurrentVersionNode = () => {
+        if (versionIndex === -1) {
+            return node; // The base node itself
+        } else {
+            return node.versions[versionIndex]; // A specific version
+        }
+    };
+
+    const currentVersionNode = getCurrentVersionNode();
+    const currentMessageData = currentVersionNode.data;
+
+    // Navigate to the next or previous version
+    const showNextVersion = () => {
+        setVersionIndex((prevIndex) => (prevIndex < node.versions.length - 1 ? prevIndex + 1 : prevIndex));
+    };
+
+    const showPreviousVersion = () => {
+        setVersionIndex((prevIndex) => (prevIndex > -1 ? prevIndex - 1 : prevIndex));
+    };
+
+    // Determine the children to display for the current version
+    // Assuming that if the version has children, they should be displayed
+    // Otherwise, fall back to displaying the base version's children
+    const childrenToDisplay = currentVersionNode.children || node.children;
 
     return (
         <div>
-            <div>Message: {messageData.text}</div> {/* Adjust to match your data structure */}
-            {node.children.length > 0 && (
+            <br/>
+            <div>Message: {currentMessageData.text}</div>
+            {node.versions.length > 0 && (
+                <div>
+                    <button className="bg-gray-300 p-1 mr-3"
+                        onClick={showPreviousVersion} disabled={versionIndex === -1}>
+                        &lt; Prev
+                    </button>
+                    <span>
+            Version {versionIndex + 2} of {node.versions.length + 1}
+          </span>
+                    <button className="bg-gray-300 p-1 ml-3"
+                        onClick={showNextVersion} disabled={versionIndex >= node.versions.length - 1}>
+                        Next &gt;
+                    </button>
+                </div>
+            )}
+            {/* Render children for the current version */}
+            {childrenToDisplay.length > 0 && (
                 <div className="children">
-                    <br/>
-                    {node.children.map(child => (
-                        <MessageComponent key={child.getCurrentVersionData().message_id} node={child} />
+                    {childrenToDisplay.map((childNode) => (
+                        <MessageComponent key={childNode.data.message_id} node={childNode} />
                     ))}
                 </div>
             )}
         </div>
     );
 };
+
+
 // const MessageComponent = ({ node }: { node: MessageNode }) => {
 //     console.log("node", node.versions.text);
 //     // Determine the initial version to display - default to the latest version
@@ -97,7 +142,7 @@ export default function ChatWindow({params}: { params: { id: string } }) {
     const [editedMessage, setEditedMessage] = useState(false);
     const [newMessageText, setNewMessageText] = useState('');
 
-    const {messageTree, addMessage, deleteMessage, initializeOrUpdateTree,} = useChat();
+    const {messageTree, addMessage, deleteMessage, initializeOrUpdateTree} = useChat();
 
     // const { branch, lastMessage } = getBranchAndLastMessageFromTree();
 
