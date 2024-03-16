@@ -11,6 +11,7 @@ import ChatStream from "@/app/projects/[id]/chat/[chat_id]/chatStream";
 import {AuthContext} from "@/components/AuthProvider";
 import {useChat} from './ChatContext';
 import {MessageNode} from "@/app/projects/[id]/chat/[chat_id]/messageNode";
+import {useRouter} from "next/navigation";
 
 interface MessageComponentProps {
     node: MessageNode;
@@ -148,9 +149,13 @@ export default function ChatWindow({params}: ChatWindowProps) {
 
     // create sample LLM with LLMProps
     const [pickedLLM, setPickedLLM] = useState<LLMProps | null>(null);
+    const [llmMessage, setLLMMessage] = useState<string>("");
+    const [markAnswered, setMarkAnswered] = useState<boolean>(false);
 
 
     const {messageTree, addMessage, deleteMessage, initializeOrUpdateTree} = useChat();
+
+    const router = useRouter();
 
     // const { branch, lastMessage } = getBranchAndLastMessageFromTree();
 
@@ -182,12 +187,25 @@ export default function ChatWindow({params}: ChatWindowProps) {
         messages,
         startFetching,
         stopFetching
-    } = useManualServerSentEvents('http://127.0.0.1:8000/chat_model', {message: messageText});
+    } = useManualServerSentEvents('http://127.0.0.1:8000/chat_model', {message: newMessageText});
 
     // Combine messages and replace '\n\n' with HTML line break '<br /><br />'
     const combinedMessages = useMemo(() => {
+        setLLMMessage(messages.join('').replace(/\n\n/g, '<br /><br />'));
         return messages.join('').replace(/\n\n/g, '<br /><br />');
     }, [messages]);
+
+    useEffect(() => {
+        // console.log(llmMessage);
+        const llmResponseString = JSON.stringify(llmMessage);
+        localStorage.setItem('llmResponse', llmResponseString);
+    }, [llmMessage]);
+
+    useEffect(() => {
+        // set realLastMessage in localStorage
+        const realLastMessageString = JSON.stringify(realLastMessage);
+        localStorage.setItem('realLastMessage', realLastMessageString);
+    }, [realLastMessage, llmMessage, currentMessage, lastMessageRef, doesStateChange]);
 
     useEffect(() => {
         console.log("Calling useEffect for get initial chat messages")
@@ -215,7 +233,7 @@ export default function ChatWindow({params}: ChatWindowProps) {
         };
 
         fetchData();
-    }, []);
+    }, [markAnswered]);
 
     useEffect(() => {
         console.log("Calling useEffect for get updated chat messages")
@@ -311,6 +329,10 @@ export default function ChatWindow({params}: ChatWindowProps) {
 
 
     const insertNewIntoSupabase = async () => {
+        // get realLastMessage from localStorage
+        let realLastMessageString = localStorage.getItem('realLastMessage');
+        const theRealLastMessage = JSON.parse(realLastMessageString);
+
         console.log("Inserting into Supabase")
         console.log("chat_id", params.chat_id)
         console.log("user_id", user.id)
@@ -326,7 +348,7 @@ export default function ChatWindow({params}: ChatWindowProps) {
                     user_id: user.id,
                     text: newMessageText,
                     version: 1,
-                    previous_message_id: realLastMessage?.message_id
+                    previous_message_id: theRealLastMessage.message_id
                 }
             ]);
 
@@ -334,13 +356,18 @@ export default function ChatWindow({params}: ChatWindowProps) {
         else console.log('Inserted into Supabase:', data);
     };
 
-    const insertNewLLMResponseIntoSupabase = async () => {
+    const insertNewLLMResponseIntoSupabase = async (llmResponse) => {
+        // get realLastMessage from localStorage
+        let realLastMessageString = localStorage.getItem('realLastMessage');
+        const theRealLastMessage = JSON.parse(realLastMessageString);
+
         console.log("Inserting into Supabase")
         console.log("chat_id", params.chat_id)
         console.log("llm_id", user.id)
-        console.log("text", "This is a response from the LLM")
+        console.log("text", llmResponse)
         console.log("version", 1)
-        console.log("previous_message_id", lastMessage.message_id)
+        // console.log("previous_message_id", realLastMessage.message_id)
+        console.log("previous_message_id", theRealLastMessage.message_id)
         // original_message_id -
         const {data, error} = await supabase
             .from('chat_message')
@@ -348,9 +375,9 @@ export default function ChatWindow({params}: ChatWindowProps) {
                 {
                     chat_id: params.chat_id,
                     user_id: user.id,
-                    text: "This is a response from the LLM",
+                    text: llmResponse,
                     version: 1,
-                    previous_message_id: realLastMessage?.message_id
+                    previous_message_id: theRealLastMessage.message_id
                 }
             ]);
 
@@ -360,11 +387,22 @@ export default function ChatWindow({params}: ChatWindowProps) {
     };
 
     const handleSendClick = async () => {
+        // router.push(`/projects/${params.id}/chat/${params.chat_id}`);
         // await startFetching();
         await insertNewIntoSupabase();
-        // await startFetching();
-        // await insertNewIntoSupabase();
-        await insertNewLLMResponseIntoSupabase();
+        await startFetching();
+        console.log("Start fetching Done");
+        // get LLM response from localStorage
+        const llmResponseString = localStorage.getItem('llmResponse');
+        const llmResponse = JSON.parse(llmResponseString);
+        if (llmResponse !== "") {
+            await insertNewLLMResponseIntoSupabase(llmResponse);
+            setLLMMessage("")
+            // clear localStorage
+            localStorage.removeItem('llmResponse');
+        }
+        // refresh the chat window
+        setMarkAnswered(!markAnswered);
     };
 
 
@@ -388,7 +426,7 @@ export default function ChatWindow({params}: ChatWindowProps) {
 
 
     return (
-        <div className="flex h-screen">
+        <div className="flex bg-white">
             {/* Chat Area */}
             <div className="flex-1 flex flex-col">
 
@@ -409,6 +447,18 @@ export default function ChatWindow({params}: ChatWindowProps) {
                     )}
                 </div>
 
+
+                <div className="stream message">
+                    <div className="flex items-start space-x-2 mb-4">
+                        <img src={'/profile_image.png'} alt="Stream"
+                             className="w-10 h-10 rounded-full object-cover"/>
+                        <div className="flex flex-col rounded bg-gray-100 p-2 shadow">
+                            <div className="font-bold">{"Stream"}</div>
+                            <div className="stream-content" dangerouslySetInnerHTML={{__html: llmMessage}}/>
+                        </div>
+                    </div>
+                </div>
+
                 <div className="flex-1 flex flex-col">
                     {/* Input for new message text */}
                     <input
@@ -421,22 +471,14 @@ export default function ChatWindow({params}: ChatWindowProps) {
                     {/*<button onClick={handleAddClick}>Test Message</button>*/}
                 </div>
 
-                <div className="stream message">
-                    <div className="flex items-start space-x-2 mb-4">
-                        <img src={'/profile_image.png'} alt="Stream"
-                             className="w-10 h-10 rounded-full object-cover"/>
-                        <div className="flex flex-col rounded bg-gray-100 p-2 shadow">
-                            <div className="font-bold">{"Stream"}</div>
-                            <div className="stream-content" dangerouslySetInnerHTML={{__html: combinedMessages}}/>
-                        </div>
-                    </div>
-                </div>
+                {/*show the realLastMessage from localStorage*/}
+                <div>Real lastMessage: {realLastMessage?.text}</div>
 
                 {/*<ChatComponent data={chatData} stream={combinedMessages} setLastMessage={setLastMessage}*/}
                 {/*               lastMessage={lastMessage}/>*/}
                 {/*<ChatStream/>*/}
 
-                <div>Real lastMessage: {realLastMessage?.text}</div>
+
             </div>
         </div>
     );

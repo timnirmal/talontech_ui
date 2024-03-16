@@ -9,7 +9,8 @@ export const useManualServerSentEvents = (url: string, body: any, headers?: Head
         setController(newController);
         const signal = newController.signal;
 
-        const fetchData = async () => {
+        // Return a new promise that will be resolved when the stream ends
+        return new Promise(async (resolve, reject) => {
             try {
                 const response = await fetch(url, {
                     method: 'POST',
@@ -28,6 +29,7 @@ export const useManualServerSentEvents = (url: string, body: any, headers?: Head
                     while (true) {
                         const { done, value } = await reader.read();
                         if (done) {
+                            resolve(); // Resolve the promise when the stream ends
                             break;
                         }
                         const str = decoder.decode(value);
@@ -40,18 +42,18 @@ export const useManualServerSentEvents = (url: string, body: any, headers?: Head
                             console.error("Error parsing message:", error);
                         }
                     }
+                } else {
+                    reject(new Error('Response body is null'));
                 }
             } catch (error) {
                 if (error.name === 'AbortError') {
-                    // Fetch was aborted
                     console.log('Fetch aborted');
                 } else {
                     console.error("Fetch error:", error);
+                    reject(error);
                 }
             }
-        };
-
-        fetchData();
+        });
     }, [url, body, headers]);
 
     const stopFetching = useCallback(() => {

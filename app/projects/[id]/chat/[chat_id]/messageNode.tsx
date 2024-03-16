@@ -121,7 +121,9 @@ export const addNewNode = (root: MessageNode, newData: MessageData): void => {
     const newNode = new MessageNode(newData.message_id, newData);
 
     if (newData.previous_message_id) {
-        const parentNode = root.findNodeById(newData.previous_message_id);
+        console.log("Reply to an existing message");
+        console.log("The Root", root);
+        const parentNode = root?.findNodeById(newData.previous_message_id);
         if (!parentNode) {
             console.error("Parent node not found.");
             return;
