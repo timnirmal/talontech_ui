@@ -15,9 +15,9 @@ export default function ChatWindowsLayout({children, params}: ChatWindowsLayoutP
     const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
     return (
-        <div className="flex h-screen">
+        <div className="flex">
             <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} activeProjectId={params.id}/>
-            <div className="w-3/4 bg-gray-100">
+            <div className="flex-1 bg-gray-100 overflow-auto" style={{ paddingLeft: '20%' }}>
                 {children}
             </div>
         </div>

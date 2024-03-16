@@ -88,28 +88,20 @@ const SidebarChats = ({activeProjectId}) => {
     return (
         <div className="">
             {/* Middle section for chat list */}
-            <div>
-                {/*<h2>Chat Sessions</h2>*/}
+            <div className="p-2">
                 {chatSessions.length > 0 ? (
                     <div>
-                        {/*{console.log(chatSessions)}*/}
-                        <div>
-                            {/*{chatSessions.map((session) => (*/}
-                            {/*    <button key={session.chat_id}*/}
-                            {/*        onClick={() => router.push(`/projects/${activeProjectId}/chat/${session.chat_id}`)}>*/}
-                            {/*        /!*{*!/*/}
-                            {/*        /!*    session.chat_name != null ? <div>*!/*/}
-                            {/*                <div>{session?.chat_name}</div>*/}
-                            {/*            /!*</div> : <div>*!/*/}
-                            {/*            /!*    <div>{session?.chat_id}</div>*!/*/}
-                            {/*            /!*</div>*!/*/}
-                            {/*        /!*}*!/*/}
-                            {/*    </button>*/}
-                            {/*))}*/}
-                        </div>
+                        {/* Loop through each session and create a button for it */}
+                        {chatSessions.map((session) => (
+                            <div key={session.chat_id} className="p-2 hover:bg-gray-700 cursor-pointer">
+                                <button onClick={() => router.push(`/projects/${activeProjectId}/chat/${session.chat_id}`)}>
+                                    <div>{session?.chat_name || session?.chat_id}</div>
+                                </button>
+                            </div>
+                        ))}
                     </div>
                 ) : (
-                    <p>No chat sessions to display</p>
+                    <p></p>
                 )}
             </div>
         </div>
