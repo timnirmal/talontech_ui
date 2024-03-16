@@ -12,6 +12,7 @@ import {AuthContext} from "@/components/AuthProvider";
 import {useChat} from './ChatContext';
 import {MessageNode} from "@/app/projects/[id]/chat/[chat_id]/messageNode";
 import {useRouter} from "next/navigation";
+import MessageComponent from "@/app/projects/[id]/chat/[chat_id]/ChatComponent";
 
 interface MessageComponentProps {
     node: MessageNode;
@@ -42,92 +43,98 @@ const pickedLLM: LLMProps = {
     version: "1"
 }
 
+// // RenderMessageNode.js
+// const RenderMessageNode = ({ message }) => {
+//     return (
+//         <div key={message.message_id} className="flex items-start space-x-2 mb-4">
+//             <img src={'/profile_image.png'} alt={message.sender_name || "Sender"} className="w-10 h-10 rounded-full object-cover" />
+//             <div className={`flex flex-col ${message.type === 'user' ? 'bg-blue-100' : 'bg-green-100'} p-2 rounded`}>
+//                 <div className="font-bold">{message.sender_name || "Unknown Sender"}</div>
+//                 <div>{message.text}</div>
+//             </div>
+//         </div>
+//     );
+// };
 
-const MessageComponent = ({
-                              node,
-                              lastMessageRef,
-                              currentMessage,
-                              setCurrentMessage,
-                              doesStateChange,
-                              setDoesStateChange
-                          }: MessageComponentProps) => {
-    // State to track the index of the current version being displayed.
-    const [versionIndex, setVersionIndex] = useState(-1);
 
+// const MessageComponent = ({
+//                               node,
+//                               lastMessageRef,
+//                               currentMessage,
+//                               setCurrentMessage,
+//                               doesStateChange,
+//                               setDoesStateChange
+//                           }) => {
+//     const [versionIndex, setVersionIndex] = useState(-1);
+//
+//     const getCurrentVersionNode = () => {
+//         return versionIndex === -1 ? node : node.versions[versionIndex];
+//     };
+//
+//     const currentVersionNode = getCurrentVersionNode();
+//     const currentMessageData = currentVersionNode.data;
+//
+//     const showNextVersion = () => {
+//         setVersionIndex((prevIndex) => (prevIndex < node.versions.length - 1 ? prevIndex + 1 : prevIndex));
+//         setDoesStateChange(true);
+//     };
+//
+//     const showPreviousVersion = () => {
+//         setVersionIndex((prevIndex) => (prevIndex > -1 ? prevIndex - 1 : prevIndex));
+//         setDoesStateChange(true);
+//     };
+//
+//     const childrenToDisplay = currentVersionNode.children || node.children;
+//
+//     useEffect(() => {
+//         setCurrentMessage(currentMessageData);
+//     }, [currentMessageData]);
+//
+//     useEffect(() => {
+//         lastMessageRef.current = currentMessageData;
+//     }, [currentMessageData, lastMessageRef]);
+//
+//     return (
+//         <div key={currentMessageData.message_id} className="flex items-start space-x-2 mb-4">
+//             {/* Profile Image */}
+//             <img src={'/profile_image.png'} alt={currentMessageData.sender_name || "Sender"}
+//                  className="w-10 h-10 rounded-full object-cover" />
+//             {/* Message and Version Details */}
+//             <div className={`flex flex-col rounded ${currentMessageData.type === 'user' ? 'bg-blue-100' : 'bg-green-100'} p-2`}>
+//                 <div className="font-bold">{currentMessageData.sender_name || "Unknown Sender"}</div>
+//                 <div>Message: {currentMessageData.text}</div>
+//                 <div>Message ID: {currentMessageData.message_id}</div>
+//                 {/* Version Navigation */}
+//                 {node.versions.length > 0 && (
+//                     <div className="flex items-center space-x-3 mt-2">
+//                         <button onClick={showPreviousVersion} disabled={versionIndex === -1} className="bg-gray-300 p-1">
+//                             &lt; Prev
+//                         </button>
+//                         <span>Version {versionIndex + 2} of {node.versions.length + 1}</span>
+//                         <button onClick={showNextVersion} disabled={versionIndex >= node.versions.length - 1} className="bg-gray-300 p-1">
+//                             Next &gt;
+//                         </button>
+//                     </div>
+//                 )}
+//                 {/* Render children */}
+//                 {childrenToDisplay.length > 0 && (
+//                     <div className="children mt-2">
+//                         {childrenToDisplay.map((childNode) => (
+//                             <MessageComponent key={childNode.data.message_id} node={childNode}
+//                                               lastMessageRef={lastMessageRef}
+//                                               currentMessage={currentMessage}
+//                                               setCurrentMessage={setCurrentMessage}
+//                                               doesStateChange={doesStateChange}
+//                                               setDoesStateChange={setDoesStateChange}
+//                             />
+//                         ))}
+//                     </div>
+//                 )}
+//             </div>
+//         </div>
+//     );
+// };
 
-    // Helper to get the node (version or base) currently being displayed.
-    const getCurrentVersionNode = () => {
-        if (versionIndex === -1) {
-            return node; // The base node itself
-        } else {
-            return node.versions[versionIndex]; // A specific version
-        }
-    };
-
-    const currentVersionNode = getCurrentVersionNode();
-    const currentMessageData = currentVersionNode.data;
-
-    // Navigate to the next or previous version
-    const showNextVersion = () => {
-        setVersionIndex((prevIndex) => (prevIndex < node.versions.length - 1 ? prevIndex + 1 : prevIndex));
-        setDoesStateChange(true);
-    };
-
-    const showPreviousVersion = () => {
-        setVersionIndex((prevIndex) => (prevIndex > -1 ? prevIndex - 1 : prevIndex));
-        setDoesStateChange(true);
-    };
-
-    const childrenToDisplay = currentVersionNode.children || node.children;
-
-    // when currentMessageData changes, update the currentMessage state
-    useEffect(() => {
-        setCurrentMessage(currentMessageData);
-    }, [currentMessageData]);
-
-    useEffect(() => {
-        lastMessageRef.current = currentMessageData;
-    }, [currentMessageData, lastMessageRef]);
-
-    return (
-        <div>
-            <br/>
-            <div>Version: {currentVersionNode.currentVersion}</div>
-            <div>Message: {currentMessageData.text}</div>
-            <div>Message ID: {currentMessageData.message_id}</div>
-            {node.versions.length > 0 && (
-                <div>
-                    <button className="bg-gray-300 p-1 mr-3"
-                            onClick={showPreviousVersion} disabled={versionIndex === -1}>
-                        &lt; Prev
-                    </button>
-                    <span>
-            Version {versionIndex + 2} of {node.versions.length + 1}
-          </span>
-                    <button className="bg-gray-300 p-1 ml-3"
-                            onClick={showNextVersion} disabled={versionIndex >= node.versions.length - 1}>
-                        Next &gt;
-                    </button>
-                </div>
-            )}
-            {/* Render children for the current version */}
-            {childrenToDisplay.length > 0 && (
-                <div className="children">
-                    {childrenToDisplay.map((childNode) => (
-                        <MessageComponent key={childNode.data.message_id}
-                                          node={childNode}
-                                          lastMessageRef={lastMessageRef}
-                                          currentMessage={currentMessage}
-                                          setCurrentMessage={setCurrentMessage}
-                                          doesStateChange={doesStateChange}
-                                          setDoesStateChange={setDoesStateChange}
-                        />
-                    ))}
-                </div>
-            )}
-        </div>
-    );
-};
 
 export default function ChatWindow({params}: ChatWindowProps) {
     const [imageData, setImageData] = useState(null);
