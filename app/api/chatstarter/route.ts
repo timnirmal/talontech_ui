@@ -17,6 +17,14 @@ export async function POST(request: Request, response: Response) {
         // const file = res_1.get("file")
         // const pageId = res_1.get("pageId")
 
+        const project_id = res_1.get("project_id")
+        console.log("project_id", project_id)
+        console.log("project_id", project_id)
+        console.log("project_id", project_id)
+        console.log("project_id", project_id)
+        console.log("project_id", project_id)
+        console.log("project_id", project_id)
+
         const {
             data: {user},
         } = await supabase.auth.getUser();
@@ -25,7 +33,10 @@ export async function POST(request: Request, response: Response) {
             const {data, error} = await supabase
                 .from('chat_session')
                 .insert([
-                    {},
+                    {
+                        chat_name: "Chat",
+                        project_id: project_id,
+                    },
                 ])
                 .select()
 

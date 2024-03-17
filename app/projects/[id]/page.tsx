@@ -1,23 +1,30 @@
 import {createServerComponentClient} from "@supabase/auth-helpers-nextjs";
 import {cookies} from "next/headers";
-import ShowProjects from "@/app/projects/showProjects";
-import NewProject from "@/app/projects/addProject";
 import {Database} from "@/types/supabase";
-import NewFiles from "@/app/projects/[id]/files/addFiles";
-import ChatWindowStarter from "@/app/projects/[id]/chatWindowStarter";
-import Window from "@/app/projects/[id]/window";
+import Link from "next/link";
+import ShowProjectData from "@/app/projects/[id]/ShowProjectData";
 
-export default async function ProjectsView({ params }: { params: { id: string } }) {
-    // const supabase = createServerComponentClient({cookies});
+
+const cards = [
+    // Example card data
+    {id: 1, title: 'Summarize', imageUrl: '/Summarize.png', link: '/tools/summarize'},
+    {id: 2, title: 'Categorize', imageUrl: '/Categorize.png', link: '/tools/categorize'},
+    {id: 3, title: 'Extract Data', imageUrl: '/Extract.png', link: '/tools/extractdata'},
+    {id: 3, title: 'Generate Docs', imageUrl: '/Generate 02.png', link: '/tools/generatedocs'},
+];
+
+export default async function ProjectsView({params}: { params: { id: string } }) {
     const supabase = createServerComponentClient<Database>({cookies})
 
     const {
         data: {user},
     } = await supabase.auth.getUser()
 
+
     return (
-        <div>
-            <ChatWindowStarter params={params}/>
+        <div className="">
+            <ShowProjectData params={params}/>
         </div>
+
     )
 }
