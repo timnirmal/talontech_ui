@@ -48,22 +48,9 @@ export async function POST(request: Request, response: Response) {
                     .select()
 
 
-
-
-
-
-
-            }
-            else {
+            } else {
                 return Response.json({error: "There is an error in the request. Please try again."})
             }
-
-
-
-
-
-
-
 
             return Response.json({chat_id: chat_id})
 

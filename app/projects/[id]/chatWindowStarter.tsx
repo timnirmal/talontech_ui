@@ -14,13 +14,13 @@ export default function ChatWindowStarter({params}: { params: { id: string } }) 
     const [currentFiles, setCurrentFiles] = useState({});
     const [messageText, setMessageText] = useState("")
     const supabase = createClientComponentClient<Database>();
+    const [llmMessage, setLLMMessage] = useState("")
 
     const handleImageUpload = (fileName, imageUrl) => {
         // Update the state with the new image URL
         // Add the new image URL to the current files like {file1: url1, file2: url2}
         setCurrentFiles({...currentFiles, [fileName]: imageUrl})
     };
-
 
     const removeImage = (fileUrlToRemove) => {
         const filteredFiles = Object.entries(currentFiles).reduce((acc, [key, value]) => {
@@ -33,7 +33,7 @@ export default function ChatWindowStarter({params}: { params: { id: string } }) 
         setCurrentFiles(filteredFiles);
     };
 
-    const uploadFile = async () => {
+    const createChatInstance = async () => {
         // console.log('uploadFile', file);
         const formData = new FormData();
         // formData.append('file', file);
@@ -99,11 +99,41 @@ export default function ChatWindowStarter({params}: { params: { id: string } }) 
         else console.log('Inserted into Supabase:', data);
     };
 
+    const insertNewLLMResponseIntoSupabase = async (llmResponse) => {
+        // get realLastMessage from localStorage
+        let realLastMessageString = localStorage.getItem('realLastMessage');
+        const theRealLastMessage = JSON.parse(realLastMessageString);
+
+        console.log("Inserting into Supabase")
+        console.log("chat_id", params.chat_id)
+        console.log("llm_id", user.id)
+        console.log("text", llmResponse)
+        console.log("version", 1)
+        // console.log("previous_message_id", realLastMessage.message_id)
+        console.log("previous_message_id", theRealLastMessage.message_id)
+        // original_message_id -
+        const {data, error} = await supabase
+            .from('chat_message')
+            .insert([
+                {
+                    chat_id: params.chat_id,
+                    llm_id: user.id,
+                    text: llmResponse,
+                    version: 1,
+                    previous_message_id: theRealLastMessage.message_id
+                }
+            ]);
+
+        // if (error) console.error('Error inserting into Supabase:', error);
+        // else console.log('Inserted into Supabase:', data);
+        console.log('Inserted into Supabase:', data);
+    };
+
     const {
         messages,
         startFetching,
         stopFetching
-    } = useManualServerSentEvents('http://127.0.0.1:8000/chat_model', {message: newMessageText});
+    } = useManualServerSentEvents('http://127.0.0.1:8000/chat_model', {message: messageText});
 
     // Combine messages and replace '\n\n' with HTML line break '<br /><br />'
     const combinedMessages = useMemo(() => {
@@ -112,15 +142,14 @@ export default function ChatWindowStarter({params}: { params: { id: string } }) 
     }, [messages]);
 
     async function handleMessageSend() {
-        // create new chat, chat message, attach files
-        // redirect to chat window
-
-        const chat_id = await uploadFile();
+        const chat_id = await createChatInstance();
         console.log("chat_id", chat_id)
+
         await insertNewIntoSupabase(chat_id);
 
         await startFetching();
         console.log("Start fetching Done");
+
         // get LLM response from localStorage
         const llmResponseString = localStorage.getItem('llmResponse');
         const llmResponse = JSON.parse(llmResponseString);

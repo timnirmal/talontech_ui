@@ -71,6 +71,10 @@ export default function ChatWindow({params}: ChatWindowProps) {
     const [llmMessage, setLLMMessage] = useState<string>("");
     const [markAnswered, setMarkAnswered] = useState<boolean>(false);
 
+    const [rootMessageExist, setRootMessageExist] = useState(true);
+    const [rootMessage, setRootMessage] = useState(true);
+
+    const messagesEndRef = useRef(null)
 
     const {messageTree, addMessage, deleteMessage, initializeOrUpdateTree} = useChat();
 
@@ -101,6 +105,11 @@ export default function ChatWindow({params}: ChatWindowProps) {
 
         setCurrentFiles(filteredFiles);
     };
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView()
+        // messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    }
 
     const {
         messages,
@@ -163,14 +172,12 @@ export default function ChatWindow({params}: ChatWindowProps) {
                 .from('llm')
                 .select()
 
-
-            // console.log("data", data);
-            // console.log("error", error);
-
             if (data) {
                 if (data.length > 0) {
                     // console.log("Data length", data.length);
                     setPickedLLM(data);
+                    setSelectedLLM(data[0].llm_id);
+                    setSecondarySelectedLLM(data[0].llm_id);
                 }
             }
             if (error) {
@@ -181,7 +188,6 @@ export default function ChatWindow({params}: ChatWindowProps) {
 
         fetchData();
     }, []);
-
 
 
     useEffect(() => {
@@ -276,6 +282,19 @@ export default function ChatWindow({params}: ChatWindowProps) {
         }
     }, [lastMessageRef.current, lastMessage, doesStateChange, realLastMessage])
 
+    useEffect(() => {
+        // Check if messageTree exists and has data
+        if (messageTree && Object.keys(messageTree).length !== 0) {
+            // If messageTree exists, we are not at the root message
+            setRootMessageExist(false);
+        } else {
+            // If messageTree doesn't exist or is empty, we are at the root message
+            setRootMessageExist(true);
+        }
+
+        scrollToBottom()
+    }, [messageTree]);
+
 
     const insertNewIntoSupabase = async () => {
         // get realLastMessage from localStorage
@@ -287,22 +306,58 @@ export default function ChatWindow({params}: ChatWindowProps) {
         console.log("user_id", user.id)
         console.log("text", newMessageText)
         console.log("version", 1)
-        console.log("previous_message_id", lastMessage.message_id)
-        // original_message_id -
-        const {data, error} = await supabase
-            .from('chat_message')
-            .insert([
-                {
-                    chat_id: params.chat_id,
-                    user_id: user.id,
-                    text: newMessageText,
-                    version: 1,
-                    previous_message_id: theRealLastMessage.message_id
-                }
-            ]);
 
-        if (error) console.error('Error inserting into Supabase:', error);
-        else console.log('Inserted into Supabase:', data);
+        if (rootMessageExist) {
+            console.log("rootMessageExist is true")
+            const {data, error} = await supabase
+                .from('chat_message')
+                .insert([
+                    {
+                        chat_id: params.chat_id,
+                        user_id: user.id,
+                        text: newMessageText,
+                        version: 1,
+                    }
+                ]);
+
+
+            if (error) console.error('Error inserting into Supabase:', error);
+            else console.log('Inserted into Supabase:', data);
+        } else {
+            // console.log("previous_message_id", lastMessage.message_id)
+            // original_message_id -
+            const {data, error} = await supabase
+                .from('chat_message')
+                .insert([
+                    {
+                        chat_id: params.chat_id,
+                        user_id: user.id,
+                        text: newMessageText,
+                        version: 1,
+                        previous_message_id: theRealLastMessage.message_id
+                    }
+                ]);
+
+            if (error) console.error('Error inserting into Supabase:', error);
+            else console.log('Inserted into Supabase:', data);
+        }
+
+        const fetchData = async () => {
+            setIsLoading(true);
+            const {data, error} = await supabase.from('chat_message').select().eq('chat_id', params.chat_id)
+
+            if (data && data.length > 0) {
+                setChatData(data);
+                initializeOrUpdateTree(data);
+            } else {
+                console.error("No LLM models found or error fetching models:", error);
+            }
+            setIsLoading(false);
+        };
+
+        await fetchData();
+
+
     };
 
     const insertNewLLMResponseIntoSupabase = async (llmResponse) => {
@@ -312,7 +367,7 @@ export default function ChatWindow({params}: ChatWindowProps) {
 
         console.log("Inserting into Supabase")
         console.log("chat_id", params.chat_id)
-        console.log("llm_id", user.id)
+        console.log("llm_id",selectedLLM)
         console.log("text", llmResponse)
         console.log("version", 1)
         // console.log("previous_message_id", realLastMessage.message_id)
@@ -323,7 +378,7 @@ export default function ChatWindow({params}: ChatWindowProps) {
             .insert([
                 {
                     chat_id: params.chat_id,
-                    llm_id: user.id,
+                    llm_id: selectedLLM,
                     text: llmResponse,
                     version: 1,
                     previous_message_id: theRealLastMessage.message_id
@@ -338,22 +393,31 @@ export default function ChatWindow({params}: ChatWindowProps) {
     const handleSendClick = async () => {
         // router.push(`/projects/${params.id}/chat/${params.chat_id}`);
         // await startFetching();
+        console.log("LLMMesage", llmMessage);
+        // resetLLMMessages();
+
         await insertNewIntoSupabase();
         await startFetching();
         console.log("Start fetching Done");
+
         // get LLM response from localStorage
         const llmResponseString = localStorage.getItem('llmResponse');
         const llmResponse = JSON.parse(llmResponseString);
         if (llmResponse !== "") {
             await insertNewLLMResponseIntoSupabase(llmResponse);
             setLLMMessage("")
+            resetLLMMessages();
             // clear localStorage
             localStorage.removeItem('llmResponse');
         }
+
         // refresh the chat window
         setMarkAnswered(!markAnswered);
     };
 
+    const resetLLMMessages = () => {
+        setLLMMessage("");
+    }
 
     const handleDeleteClick = (messageId) => {
         deleteMessage(messageId);
@@ -376,6 +440,8 @@ export default function ChatWindow({params}: ChatWindowProps) {
     const toggle = () => {
         setEnableSecondaryLLM(!enableSecondaryLLM);
     };
+
+
 
 
     return (
@@ -424,18 +490,47 @@ export default function ChatWindow({params}: ChatWindowProps) {
 
 
                 <div className="chat-window">
-                    {/*<h2>Chat Window for Project {params.id}</h2>*/}
-                    {console.log("messageTree in ui", messageTree)}
-                    {messageTree ? (
-                        <MessageComponent node={messageTree}
-                                          currentMessage={currentMessage}
-                                          lastMessageRef={lastMessageRef}
-                                          setCurrentMessage={updateCurrentMessage}
-                                          doesStateChange={doesStateChange}
-                                          setDoesStateChange={updateDoesStateChange}
-                        />
+                    {rootMessageExist ? (
+                        <div>
+                            {/* Placeholder for when rootMessageExist is true. You can add your single component code here. */}
+                            <div>Your component or content for the root message</div>
+                            {/*    show chatdata*/}
+                            <div>
+                                {chatData.map((message) => (
+                                    <div key={message.message_id} className="flex items-start space-x-2 mb-4">
+                                        <img src={'/profile_image.png'} alt="Stream"
+                                             className="w-10 h-10 rounded-full object-cover"/>
+                                        <div className="flex flex-col rounded bg-gray-100 p-2 shadow">
+                                            <div className="font-bold">{message.user_id}</div>
+                                            <div className="message-content">{message.text}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     ) : (
-                        <p>No messages to display</p>
+                        <div>
+                            {/*<button onClick={toggle}>Toggle</button>*/}
+                            {/* Conditional rendering based on the existence of messageTree */}
+                            {messageTree ? (
+                                <div>
+                                    {console.log("Root Message", rootMessageExist)}
+                                    <MessageComponent
+                                        node={messageTree}
+                                        currentMessage={currentMessage}
+                                        lastMessageRef={lastMessageRef}
+                                        setCurrentMessage={updateCurrentMessage}
+                                        doesStateChange={doesStateChange}
+                                        setDoesStateChange={updateDoesStateChange}
+                                    />
+                                </div>
+                            ) : (
+                                <div>
+                                    {console.log("Root Message", rootMessageExist)}
+                                    <p>No messages to display</p>
+                                </div>
+                            )}
+                        </div>
                     )}
                 </div>
 
@@ -464,11 +559,13 @@ export default function ChatWindow({params}: ChatWindowProps) {
                 </div>
 
                 {/*show the realLastMessage from localStorage*/}
-                <div>Real lastMessage: {realLastMessage?.text}</div>
+                {/*<div>Real lastMessage: {realLastMessage?.text}</div>*/}
 
                 {/*<ChatComponent data={chatData} stream={combinedMessages} setLastMessage={setLastMessage}*/}
                 {/*               lastMessage={lastMessage}/>*/}
                 {/*<ChatStream/>*/}
+
+                <div style={{marginBottom: 100}} ref={messagesEndRef}/>
 
 
             </div>
