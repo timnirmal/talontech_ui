@@ -1,11 +1,12 @@
 'use client';
 
-import React, {useState} from 'react';
+import React, {useMemo, useState} from 'react';
 import AddFilesIcon from "@/app/projects/[id]/chat/addFilesIcon";
 import {useRouter} from 'next/navigation';
 import {AuthContext} from "@/components/AuthProvider";
 import {createClientComponentClient} from "@supabase/auth-helpers-nextjs";
 import {Database} from "@/types/supabase";
+import {useManualServerSentEvents} from "@/hooks/useManualServerSentEvents";
 
 export default function ChatWindowStarter({params}: { params: { id: string } }) {
     const router = useRouter();
@@ -64,7 +65,7 @@ export default function ChatWindowStarter({params}: { params: { id: string } }) 
             // const urltopush = `/projects/${params.id}/chat/${chat_id}`
             // console.log("urltopush", urltopush)
 
-            router.push(`/projects/${params.id}/chat/${chat_id}`)
+            // router.push(`/projects/${params.id}/chat/${chat_id}`)
 
             return chat_id
         } else {
@@ -98,6 +99,18 @@ export default function ChatWindowStarter({params}: { params: { id: string } }) 
         else console.log('Inserted into Supabase:', data);
     };
 
+    const {
+        messages,
+        startFetching,
+        stopFetching
+    } = useManualServerSentEvents('http://127.0.0.1:8000/chat_model', {message: newMessageText});
+
+    // Combine messages and replace '\n\n' with HTML line break '<br /><br />'
+    const combinedMessages = useMemo(() => {
+        setLLMMessage(messages.join('').replace(/\n\n/g, '<br /><br />'));
+        return messages.join('').replace(/\n\n/g, '<br /><br />');
+    }, [messages]);
+
     async function handleMessageSend() {
         // create new chat, chat message, attach files
         // redirect to chat window
@@ -105,7 +118,18 @@ export default function ChatWindowStarter({params}: { params: { id: string } }) 
         const chat_id = await uploadFile();
         console.log("chat_id", chat_id)
         await insertNewIntoSupabase(chat_id);
-        // call uploadFile
+
+        await startFetching();
+        console.log("Start fetching Done");
+        // get LLM response from localStorage
+        const llmResponseString = localStorage.getItem('llmResponse');
+        const llmResponse = JSON.parse(llmResponseString);
+        if (llmResponse !== "") {
+            await insertNewLLMResponseIntoSupabase(llmResponse);
+            setLLMMessage("")
+            // clear localStorage
+            localStorage.removeItem('llmResponse');
+        }
 
     }
 

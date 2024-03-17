@@ -36,12 +36,12 @@ interface LLMProps {
     version: string;
 }
 
-// create sample LLM with LLMProps
-const pickedLLM: LLMProps = {
-    llm_id: "8db18f56-772b-4275-8316-a127a0617f45",
-    name: "Test gpt-4-turbo-preview",
-    version: "1"
-}
+// // create sample LLM with LLMProps
+// const pickedLLM: LLMProps = {
+//     llm_id: "8db18f56-772b-4275-8316-a127a0617f45",
+//     name: "Test gpt-4-turbo-preview",
+//     version: "1"
+// }
 
 
 export default function ChatWindow({params}: ChatWindowProps) {
@@ -63,7 +63,11 @@ export default function ChatWindow({params}: ChatWindowProps) {
     const [realLastMessage, setRealLastMessage] = useState(null);
 
     // create sample LLM with LLMProps
-    const [pickedLLM, setPickedLLM] = useState<LLMProps | null>(null);
+    const [pickedLLM, setPickedLLM] = useState<LLMProps[]>([]);
+    const [selectedLLM, setSelectedLLM] = useState<string>('');
+    const [secondarySelectedLLM, setSecondarySelectedLLM] = useState<string>('');
+    const [enableSecondaryLLM, setEnableSecondaryLLM] = useState<boolean>(false);
+
     const [llmMessage, setLLMMessage] = useState<string>("");
     const [markAnswered, setMarkAnswered] = useState<boolean>(false);
 
@@ -149,6 +153,36 @@ export default function ChatWindow({params}: ChatWindowProps) {
 
         fetchData();
     }, [markAnswered]);
+
+
+    useEffect(() => {
+        console.log("Calling useEffect for get initial chat messages")
+        const fetchData = async () => {
+            setIsLoading(true);
+            const {data, error} = await supabase
+                .from('llm')
+                .select()
+
+
+            // console.log("data", data);
+            // console.log("error", error);
+
+            if (data) {
+                if (data.length > 0) {
+                    // console.log("Data length", data.length);
+                    setPickedLLM(data);
+                }
+            }
+            if (error) {
+                console.error("Error fetching chat messages:", error);
+            }
+            setIsLoading(false);
+        };
+
+        fetchData();
+    }, []);
+
+
 
     useEffect(() => {
         console.log("Calling useEffect for get updated chat messages")
@@ -289,7 +323,7 @@ export default function ChatWindow({params}: ChatWindowProps) {
             .insert([
                 {
                     chat_id: params.chat_id,
-                    user_id: user.id,
+                    llm_id: user.id,
                     text: llmResponse,
                     version: 1,
                     previous_message_id: theRealLastMessage.message_id
@@ -339,16 +373,59 @@ export default function ChatWindow({params}: ChatWindowProps) {
         setDoesStateChange(true);
     }
 
+    const toggle = () => {
+        setEnableSecondaryLLM(!enableSecondaryLLM);
+    };
+
 
     return (
         <div className="flex bg-white">
             {/* Chat Area */}
             <div className="flex-1 flex flex-col">
 
+                <div className="flex items-center space-x-3 py-2">
+                    <div className="font-bold">Primary LLM:</div>
+                    <select
+                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-40 p-2"
+                        value={selectedLLM}
+                        onChange={(e) => {
+                            setSelectedLLM(e.target.value);
+                            console.log("Primary LLM", e.target.value);
+                        }}
+                    >
+                        {pickedLLM.map((llm) => (
+                            <option key={llm.llm_id} value={llm.llm_id}>{llm.name} - {llm.version}</option>
+                        ))}
+                    </select>
+
+                    <div className="font-bold">Secondary LLM:</div>
+                    <select
+                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-40 p-2"
+                        value={secondarySelectedLLM}
+                        onChange={(e) => {
+                            setSecondarySelectedLLM(e.target.value);
+                            console.log("Secondary LLM", e.target.value);
+                        }}
+                        disabled={!enableSecondaryLLM}
+                    >
+                        {pickedLLM.map((llm) => (
+                            <option key={llm.llm_id} value={llm.llm_id}>{llm.name} - {llm.version}</option>
+                        ))}
+                    </select>
+
+                    <div className="font-bold">Enable Secondary:</div>
+                    <button
+                        onClick={() => setEnableSecondaryLLM(!enableSecondaryLLM)}
+                        className={`w-16 h-8 text-sm text-white font-medium py-2 px-4 rounded-lg ${enableSecondaryLLM ? 'bg-green-500' : 'bg-gray-400'}`}
+                    >
+                        {enableSecondaryLLM ? 'ON' : 'OFF'}
+                    </button>
+                </div>
+
 
                 <div className="chat-window">
-                    <h2>Chat Window for Project {params.id}</h2>
-                    {/*{console.log("messageTree in ui", messageTree)}*/}
+                    {/*<h2>Chat Window for Project {params.id}</h2>*/}
+                    {console.log("messageTree in ui", messageTree)}
                     {messageTree ? (
                         <MessageComponent node={messageTree}
                                           currentMessage={currentMessage}

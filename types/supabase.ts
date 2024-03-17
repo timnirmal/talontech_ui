@@ -12,6 +12,7 @@ export type Database = {
       chat_message: {
         Row: {
           branch_id: string | null
+          branch_parent_chat_id: string | null
           branch_parent_id: string | null
           chat_id: string | null
           created_date: string | null
@@ -25,6 +26,7 @@ export type Database = {
         }
         Insert: {
           branch_id?: string | null
+          branch_parent_chat_id?: string | null
           branch_parent_id?: string | null
           chat_id?: string | null
           created_date?: string | null
@@ -38,6 +40,7 @@ export type Database = {
         }
         Update: {
           branch_id?: string | null
+          branch_parent_chat_id?: string | null
           branch_parent_id?: string | null
           chat_id?: string | null
           created_date?: string | null
@@ -97,16 +100,19 @@ export type Database = {
       chat_session: {
         Row: {
           chat_id: string
+          chat_name: string | null
           created_date: string | null
           updated_date: string | null
         }
         Insert: {
           chat_id?: string
+          chat_name?: string | null
           created_date?: string | null
           updated_date?: string | null
         }
         Update: {
           chat_id?: string
+          chat_name?: string | null
           created_date?: string | null
           updated_date?: string | null
         }
@@ -191,6 +197,30 @@ export type Database = {
         ]
       }
       llm: {
+        Row: {
+          created_date: string | null
+          llm_id: string
+          name: string | null
+          origin: string | null
+          version: string | null
+        }
+        Insert: {
+          created_date?: string | null
+          llm_id?: string
+          name?: string | null
+          origin?: string | null
+          version?: string | null
+        }
+        Update: {
+          created_date?: string | null
+          llm_id?: string
+          name?: string | null
+          origin?: string | null
+          version?: string | null
+        }
+        Relationships: []
+      }
+      llm_fixed: {
         Row: {
           created_date: string | null
           llm_id: string

@@ -5,9 +5,10 @@ import {redirect} from 'next/navigation';
 
 const cards = [
     // Example card data
-    { id: 1, title: 'Tools', imageUrl: '/Tools.png', link: '/tools' },
-    {id: 2, title: 'Profile', imageUrl: '/Profile.png', link: '/profile'},
-    {id: 3, title: 'Projects', imageUrl: '/Projects.png', link: '/projects'},
+    {id: 1, title: 'Summarize', imageUrl: '/Summarize.png', link: '/tools/summarize'},
+    {id: 2, title: 'Categorize', imageUrl: '/Categorize.png', link: '/tools/categorize'},
+    {id: 3, title: 'Extract Data', imageUrl: '/Extract.png', link: '/tools/extractdata'},
+    {id: 3, title: 'Generate Docs', imageUrl: '/Generate 02.png', link: '/tools/generatedocs'},
 ];
 
 export default async function Tools() {
@@ -33,7 +34,7 @@ export default async function Tools() {
     return (
         <div className="min-h-screen bg-gray-900 text-gray-300 p-8">
             <div className="bg-gray-800 shadow-lg rounded-lg p-6 pt-16 text-gray-300">
-                <h2 className="text-3xl font-semibold text-center">Projects</h2>
+                <h2 className="text-3xl font-semibold text-center">Tools</h2>
                 <div className="bg-gray-900 text-gray-300 min-h-screen p-8 mt-10">
                     <div className="flex flex-wrap -mx-4">
                         {cards.map((card) => (
@@ -41,14 +42,14 @@ export default async function Tools() {
                                 <Link href={card.link}
                                       className="block bg-gray-800 shadow-lg rounded-lg overflow-hidden">
                                     <div className="relative h-48 w-full">
+                                        <img src={card.imageUrl} alt={card.title} className="h-full mx-auto my-auto"/>
                                         {/*<Image src={card.imageUrl} alt={card.title} priority={false}*/}
                                         {/*       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"*/}
                                         {/*/>*/}
-                                        <img src={card.imageUrl} alt={card.title} className="h-full mx-auto my-auto"/>
                                         {/*<p>Loading...</p>*/}
                                     </div>
                                     <div className="p-4">
-                                    <h5 className="text-lg font-semibold">{card.title}</h5>
+                                        <h5 className="text-lg font-semibold">{card.title}</h5>
                                     </div>
                                 </Link>
                             </div>
