@@ -3,7 +3,7 @@
 import Link from "next/link";
 import SidebarChats from "@/app/projects/[id]/sideBarChats";
 import NewChatButton from "@/app/projects/[id]/NewChatButton";
-import {PersonalizationModal} from "@/app/projects/[id]/settings";
+import {PersonalizationModal} from "@/app/projects/[id]/PersonalizationModal";
 import {useState} from "react";
 
 const Sidebar = ({isOpen, toggleSidebar, activeProjectId}) => {
