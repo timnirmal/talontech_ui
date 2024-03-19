@@ -4,7 +4,18 @@ export const useManualServerSentEvents = (url: string, body: any, headers?: Head
     const [messages, setMessages] = useState<string[]>([]);
     const [controller, setController] = useState<AbortController | null>(null);
 
+    const reset = useCallback(() => {
+        // Clear messages
+        setMessages([]);
+        // Abort ongoing fetch operation, if any
+        if (controller) {
+            controller.abort();
+            setController(null); // Ensure controller is reset to null
+        }
+    }, [controller]);
+
     const startFetching = useCallback(() => {
+        reset(); // Reset before starting a new session to ensure clean state
         const newController = new AbortController();
         setController(newController);
         const signal = newController.signal;
@@ -34,7 +45,7 @@ export const useManualServerSentEvents = (url: string, body: any, headers?: Head
                         }
                         const str = decoder.decode(value);
                         try {
-                            // Adjusting for SSE format by stripping 'data: ' prefix and trimming any remaining whitespace
+                            // Adjust for SSE format by stripping 'data: ' prefix and trimming whitespace
                             const jsonStr = str.replace(/^data: /, '').trim();
                             const newMessage = JSON.parse(jsonStr);
                             setMessages((prevMessages) => [...prevMessages, newMessage.message]);
@@ -54,14 +65,11 @@ export const useManualServerSentEvents = (url: string, body: any, headers?: Head
                 }
             }
         });
-    }, [url, body, headers]);
+    }, [url, body, headers, reset]);
 
     const stopFetching = useCallback(() => {
-        if (controller) {
-            controller.abort();
-            setController(null);
-        }
-    }, [controller]);
+        reset(); // Also reset when manually stopping the fetch
+    }, [reset]);
 
     // Cleanup on component unmount
     useEffect(() => {
@@ -72,5 +80,5 @@ export const useManualServerSentEvents = (url: string, body: any, headers?: Head
         };
     }, [controller]);
 
-    return { messages, startFetching, stopFetching };
+    return { messages, startFetching, stopFetching, reset };
 };

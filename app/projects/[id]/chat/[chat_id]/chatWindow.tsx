@@ -62,17 +62,23 @@ export default function ChatWindow({params}: ChatWindowProps) {
     const [doesStateChange, setDoesStateChange] = useState(false);
     const [realLastMessage, setRealLastMessage] = useState(null);
 
+    const [stillStreaming, setStillStreaming] = useState(false);
+
     // create sample LLM with LLMProps
     const [pickedLLM, setPickedLLM] = useState<LLMProps[]>([]);
     const [selectedLLM, setSelectedLLM] = useState<string>('');
     const [secondarySelectedLLM, setSecondarySelectedLLM] = useState<string>('');
     const [enableSecondaryLLM, setEnableSecondaryLLM] = useState<boolean>(false);
+    const [currentLLM, setCurrentLLM] = useState<string>('');
 
     const [llmMessage, setLLMMessage] = useState<string>("");
     const [markAnswered, setMarkAnswered] = useState<boolean>(false);
 
     const [rootMessageExist, setRootMessageExist] = useState(true);
     const [rootMessage, setRootMessage] = useState(true);
+
+    const [onlineUsers, setOnlineUsers] = useState([]); // Use state to hold online users
+
 
     const messagesEndRef = useRef(null)
 
@@ -84,6 +90,13 @@ export default function ChatWindow({params}: ChatWindowProps) {
 
     // get user and accessToken from AuthProvider
     const {accessToken, user} = React.useContext(AuthContext);
+
+    const [userDetailsIds, setUserDetailsIds] = useState([user.id])
+    const [llmDetailsIds, setLLMDetailsIds] = useState([])
+
+    const [userDetails, setUserDetails] = useState({});
+    const [llmDetails, setLLMDetails] = useState({});
+
 
     // console.log("params.id", params.chat_id)
 
@@ -115,7 +128,7 @@ export default function ChatWindow({params}: ChatWindowProps) {
         messages,
         startFetching,
         stopFetching
-    } = useManualServerSentEvents('http://127.0.0.1:8000/chat_model', {message: newMessageText});
+    } = useManualServerSentEvents('http://127.0.0.1:8000/chat_model', {message: newMessageText, model: currentLLM});
 
     // Combine messages and replace '\n\n' with HTML line break '<br /><br />'
     const combinedMessages = useMemo(() => {
@@ -124,10 +137,14 @@ export default function ChatWindow({params}: ChatWindowProps) {
     }, [messages]);
 
     useEffect(() => {
-        // console.log(llmMessage);
-        const llmResponseString = JSON.stringify(llmMessage);
-        localStorage.setItem('llmResponse', llmResponseString);
-    }, [llmMessage]);
+        if (stillStreaming) {
+            const llmResponseString = JSON.stringify(llmMessage);
+            localStorage.setItem('llmResponse', llmResponseString);
+        }
+        else {
+            localStorage.removeItem('llmResponse');
+        }
+    }, [llmMessage, stillStreaming]);
 
     useEffect(() => {
         // set realLastMessage in localStorage
@@ -136,7 +153,7 @@ export default function ChatWindow({params}: ChatWindowProps) {
     }, [realLastMessage, llmMessage, currentMessage, lastMessageRef, doesStateChange]);
 
     useEffect(() => {
-        console.log("Calling useEffect for get initial chat messages")
+        // console.log("Calling useEffect for get initial chat messages")
         const fetchData = async () => {
             setIsLoading(true);
             const {data, error} = await supabase
@@ -165,7 +182,7 @@ export default function ChatWindow({params}: ChatWindowProps) {
 
 
     useEffect(() => {
-        console.log("Calling useEffect for get initial chat messages")
+        // console.log("Calling useEffect for get initial chat messages")
         const fetchData = async () => {
             setIsLoading(true);
             const {data, error} = await supabase
@@ -236,6 +253,43 @@ export default function ChatWindow({params}: ChatWindowProps) {
         }
     }, [lastMessageRef.current]);
 
+    useEffect(() => {
+        console.log("Calling useEffect for get updated chat messages with user")
+
+        const roomOne = supabase.channel('tracking')
+
+        roomOne
+            .on('presence', {event: 'sync'}, () => {
+                const newState = roomOne.presenceState()
+                // console.log('sync', newState)
+                const userIDs = []
+                for (const key in roomOne.presenceState()) {
+                    userIDs.push(roomOne.presenceState()[key][0])
+                }
+                // console.log('userIDs', userIDs)
+                // setOnlineUsers(userIDs)
+                setOnlineUsers([...new Set(userIDs)])
+            })
+            // .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+            //     console.log('join', key, newPresences)
+            // })
+            // .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+            //     console.log('leave', key, leftPresences)
+            // })
+            .subscribe(async (newState) => {
+                if (newState === 'SUBSCRIBED') {
+                    await roomOne.track({
+                        online_at: new Date().toISOString(),
+                        user_id: user?.id,
+                    })
+                }
+            })
+
+        return () => {
+            supabase.removeChannel(roomOne)
+        }
+    }, [user])
+
     const handleAddClick = () => {
         const newMessage = {
             chat_id: "7e1a0e0e-cb5a-4aac-955a-e1f8c06cfc3a",
@@ -249,6 +303,14 @@ export default function ChatWindow({params}: ChatWindowProps) {
         addMessage(newMessage);
         setNewMessageText(''); // Clear the input field after adding
     };
+
+    useEffect(() => {
+        if (enableSecondaryLLM) {
+            setCurrentLLM(secondarySelectedLLM);
+        }else {
+            setCurrentLLM(selectedLLM);
+        }
+    }, [selectedLLM, secondarySelectedLLM, enableSecondaryLLM]);
 
 
     const lastMessageMemo = useMemo(() => {
@@ -292,8 +354,96 @@ export default function ChatWindow({params}: ChatWindowProps) {
             setRootMessageExist(true);
         }
 
-        scrollToBottom()
+        // scrollToBottom()
     }, [messageTree]);
+
+
+    useEffect(() => {
+        // Check if messageTree exists and has data
+        if (messageTree && Object.keys(messageTree).length !== 0) {
+            console.log("MessageTree", messageTree);
+
+            const extractIds = (node, userIds = [], llmIds = []) => {
+                if (node.data) {
+                    if (node.data.user_id) userIds.push(node.data.user_id);
+                    if (node.data.llm_id) llmIds.push(node.data.llm_id);
+                }
+                if (node.children) {
+                    node.children.forEach(child => extractIds(child, userIds, llmIds));
+                }
+                return {userIds, llmIds};
+            };
+
+            const {userIds, llmIds} = extractIds(messageTree);
+
+            setUserDetailsIds([...new Set(userIds)]);
+            setLLMDetailsIds([...new Set(llmIds)]);
+
+            console.log("UserDetails", userDetailsIds);
+            console.log("LLMDetails", llmDetailsIds);
+
+        }
+    }, [messageTree]);
+
+    useEffect(() => {
+        if (userDetailsIds.length > 0) {
+            const fetchData = async () => {
+                setIsLoading(true);
+                const {data, error} = await supabase
+                    .from('profiles')
+                    .select()
+                    .in('id', userDetailsIds)
+
+                if (data) {
+                    if (data.length > 0) {
+                        // console.log("Data length", data.length);
+                        setUserDetails(data);
+                        console.log("UserDetails get", data);
+                        console.log("UserDetails get", userDetails);
+                    }
+                }
+                if (error) {
+                    console.error("Error fetching chat messages:", error);
+                }
+                setIsLoading(false);
+            };
+
+            fetchData();
+        }
+    }, [userDetailsIds]);
+
+    useEffect(() => {
+        if (llmDetailsIds.length > 0) {
+            console.log("llmDetailsIds", llmDetailsIds);
+            const fetchData = async () => {
+                setIsLoading(true);
+                const {data, error} = await supabase
+                    .from('llm')
+                    .select()
+                    .in('llm_id', llmDetailsIds)
+
+                if (data) {
+                    if (data.length > 0) {
+                        // console.log("Data length", data.length);
+                        setLLMDetails(data);
+                        console.log("LLMDetails get", data);
+                        console.log("LLMDetails get", llmDetails);
+                    }
+                }
+                if (error) {
+                    console.error("Error fetching chat messages:", error);
+                }
+                setIsLoading(false);
+            };
+
+            fetchData();
+        }
+    }, [llmDetailsIds]);
+
+
+    useEffect(() => {
+        setLLMMessage("");
+    }, [stillStreaming]);
 
 
     const insertNewIntoSupabase = async () => {
@@ -367,7 +517,7 @@ export default function ChatWindow({params}: ChatWindowProps) {
 
         console.log("Inserting into Supabase")
         console.log("chat_id", params.chat_id)
-        console.log("llm_id",selectedLLM)
+        console.log("llm_id", selectedLLM)
         console.log("text", llmResponse)
         console.log("version", 1)
         // console.log("previous_message_id", realLastMessage.message_id)
@@ -392,27 +542,39 @@ export default function ChatWindow({params}: ChatWindowProps) {
 
     const handleSendClick = async () => {
         // router.push(`/projects/${params.id}/chat/${params.chat_id}`);
-        // await startFetching();
+
         console.log("LLMMesage", llmMessage);
+        setLLMMessage("")
+        resetLLMMessages();
         // resetLLMMessages();
+        localStorage.removeItem('llmResponse');
 
         await insertNewIntoSupabase();
+        console.log(llmMessage);
+        setStillStreaming(true);
+        scrollToBottom();
         await startFetching();
         console.log("Start fetching Done");
+        console.log(llmMessage);
+        setStillStreaming(false);
+        console.log("Start fetching Done");
+        console.log(llmMessage);
 
         // get LLM response from localStorage
         const llmResponseString = localStorage.getItem('llmResponse');
         const llmResponse = JSON.parse(llmResponseString);
         if (llmResponse !== "") {
             await insertNewLLMResponseIntoSupabase(llmResponse);
-            setLLMMessage("")
-            resetLLMMessages();
-            // clear localStorage
-            localStorage.removeItem('llmResponse');
         }
+        setLLMMessage("")
+        resetLLMMessages();
+        // clear localStorage
+        localStorage.removeItem('llmResponse');
+
+        // scrollToBottom();
 
         // refresh the chat window
-        setMarkAnswered(!markAnswered);
+        // setMarkAnswered(!markAnswered);
     };
 
     const resetLLMMessages = () => {
@@ -442,14 +604,52 @@ export default function ChatWindow({params}: ChatWindowProps) {
     };
 
 
-
-
     return (
         <div className="flex bg-white">
             {/* Chat Area */}
             <div className="flex-1 flex flex-col">
+                <div className="font-bold">Online Users:</div>
+                <div>
+                    {// if onlineUsers is  not empty
+                        onlineUsers.length > 0 &&
+                        onlineUsers.map((user) => (
+                            <div key={user.user_id} className="flex items-center space-x-2">
+                                {/*{console.log("Online Users", onlineUsers)}*/}
+                                <img src={'/profile_image.png'} alt="Stream"
+                                     className="w-8 h-8 rounded-full object-cover"/>
+                                <div>{user.user_id}</div>
+                            </div>
+                        ))}
+                </div>
+                {/*/!*show userDetails*!/*/}
+                {/*<div className="font-bold">User Details:</div>*/}
+                {/*<div>*/}
+                {/*    {// if userDetails is  not empty*/}
+                {/*        userDetails.length > 0 &&*/}
+                {/*        userDetails.map((user) => (*/}
+                {/*            <div key={user.id} className="flex items-center space-x-2">*/}
+                {/*                <img src={'/profile_image.png'} alt="Stream"*/}
+                {/*                     className="w-8 h-8 rounded-full object-cover"/>*/}
+                {/*                <div>{user.username}</div>*/}
+                {/*            </div>*/}
+                {/*        ))}*/}
+                {/*</div>*/}
+                {/*/!*show llmDetails*!/*/}
+                {/*<div className="font-bold">LLM Details:</div>*/}
+                {/*<div>*/}
+                {/*    {// if llmDetails is  not empty*/}
+                {/*        llmDetails.length > 0 &&*/}
+                {/*        llmDetails.map((llm) => (*/}
+                {/*            <div key={llm.llm_id} className="flex items-center space-x-2">*/}
+                {/*                <img src={'/profile_image.png'} alt="Stream"*/}
+                {/*                     className="w-8 h-8 rounded-full object-cover"/>*/}
+                {/*                <div>{llm.name} - {llm.version}</div>*/}
+                {/*            </div>*/}
+                {/*        ))}*/}
+                {/*</div>*/}
 
                 <div className="flex items-center space-x-3 py-2">
+
                     <div className="font-bold">Primary LLM:</div>
                     <select
                         className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-40 p-2"
@@ -512,9 +712,9 @@ export default function ChatWindow({params}: ChatWindowProps) {
                         <div>
                             {/*<button onClick={toggle}>Toggle</button>*/}
                             {/* Conditional rendering based on the existence of messageTree */}
-                            {messageTree ? (
+                            {messageTree && userDetails?.length > 0 && llmDetails?.length > 0 ? (
                                 <div>
-                                    {console.log("Root Message", rootMessageExist)}
+                                    {/*{console.log("Root Message", rootMessageExist)}*/}
                                     <MessageComponent
                                         node={messageTree}
                                         currentMessage={currentMessage}
@@ -522,11 +722,13 @@ export default function ChatWindow({params}: ChatWindowProps) {
                                         setCurrentMessage={updateCurrentMessage}
                                         doesStateChange={doesStateChange}
                                         setDoesStateChange={updateDoesStateChange}
+                                        userDetails={userDetails}
+                                        llmDetails={llmDetails}
                                     />
                                 </div>
                             ) : (
                                 <div>
-                                    {console.log("Root Message", rootMessageExist)}
+                                    {/*{console.log("Root Message", rootMessageExist)}*/}
                                     <p>No messages to display</p>
                                 </div>
                             )}
@@ -535,6 +737,7 @@ export default function ChatWindow({params}: ChatWindowProps) {
                 </div>
 
 
+                {/*{stillStreaming && (*/}
                 <div className="stream message">
                     <div className="flex items-start space-x-2 mb-4">
                         <img src={'/profile_image.png'} alt="Stream"
@@ -545,6 +748,7 @@ export default function ChatWindow({params}: ChatWindowProps) {
                         </div>
                     </div>
                 </div>
+                {/*)}*/}
 
                 <div className="flex-1 flex flex-col">
                     {/* Input for new message text */}

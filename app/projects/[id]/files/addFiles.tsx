@@ -1,7 +1,10 @@
-import {createServerActionClient} from "@supabase/auth-helpers-nextjs";
+'use client';
+
+import {createClientComponentClient} from "@supabase/auth-helpers-nextjs";
 import {cookies} from "next/headers";
 import {Database} from "@/types/supabase";
 import AddFilesIcon from "@/app/projects/[id]/chat/addFilesIcon";
+import {useState} from "react";
 // import {useRef} from "react";
 
 interface NewFilesProps {
@@ -11,12 +14,14 @@ interface NewFilesProps {
 
 
 export default function NewFiles({pageId, mode = "full"}: NewFilesProps) {
+    const [state, setState] = useState("idle");
+
     const addFiles = async (formData: FormData) => {
-        "use server";
+        setState("loading")
         const title = String(formData.get("title")) as string | null;
         const description = String(formData.get("description")) as string | null;
         const file = formData.get("projectFile") as File | null;
-        const supabase = createServerActionClient<Database>({cookies});
+        const supabase = createClientComponentClient<Database>();
 
         const {
             data: {user},
@@ -24,16 +29,19 @@ export default function NewFiles({pageId, mode = "full"}: NewFilesProps) {
 
         if (user) {
             if (file?.name === undefined) {
+                setState("upload failed")
                 throw new Error("File not uploaded");
             } else {
                 // console.log("user", user);
                 // console.log("title", title);
+                console.log("addFiles pageId", pageId);
 
                 // get project id from url
                 const random = Math.random().toString(36).substring(7);
                 const filename = pageId + "/" + random + "_" + file?.name;
                 // console.log("file", file);
                 //
+                setState("uploading")
                 console.log("filename", filename);
                 const a = await supabase.storage.from('files').upload(filename, file, {
                     cacheControl: '3600',
@@ -42,8 +50,10 @@ export default function NewFiles({pageId, mode = "full"}: NewFilesProps) {
                 console.log("a", a);
 
                 if (a.error) {
+                    setState("upload failed")
                     throw new Error("File not uploaded");
                 } else {
+                    setState("upload success")
                     // project_id, user_id, file_name, description, link, created_at, updated_at
                     const b = await supabase.from("files").insert({
                         project_id: Number(pageId),
@@ -59,6 +69,7 @@ export default function NewFiles({pageId, mode = "full"}: NewFilesProps) {
                 }
             }
         }
+        setState("idle")
 
     };
     //
