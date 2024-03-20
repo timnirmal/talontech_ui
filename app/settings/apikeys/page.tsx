@@ -1,10 +1,9 @@
 import {createServerComponentClient} from "@supabase/auth-helpers-nextjs";
 import {cookies} from "next/headers";
-import ShowProjects from "@/app/projects/showProjects";
-import NewProject from "@/app/projects/addProject";
 import {Database} from "@/types/supabase";
+import ApiKeysComponent from "@/app/settings/apikeys/ApiKeys";
 
-export default async function Settings() {
+export default async function Export() {
     // const supabase = createServerComponentClient({cookies});
     const supabase = createServerComponentClient<Database>({cookies})
 
@@ -14,8 +13,7 @@ export default async function Settings() {
 
     return (
         <div>
-            {/*<ShowProjects/>*/}
-            {/*<NewProject/>*/}
+            <ApiKeysComponent />
         </div>
     )
 }

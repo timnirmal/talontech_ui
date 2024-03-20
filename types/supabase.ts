@@ -9,6 +9,41 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      api_keys: {
+        Row: {
+          api_key: string | null
+          created_at: string
+          enabled: boolean | null
+          id: number
+          service: string | null
+          user_id: string | null
+        }
+        Insert: {
+          api_key?: string | null
+          created_at?: string
+          enabled?: boolean | null
+          id?: number
+          service?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          api_key?: string | null
+          created_at?: string
+          enabled?: boolean | null
+          id?: number
+          service?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_api_keys_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_message: {
         Row: {
           branch_id: string | null
