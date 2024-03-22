@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, {useEffect, useState} from 'react';
@@ -17,7 +16,7 @@ async function fetchCategorization(text: string, model: string, categories: stri
     const bodyData = {
         text,
         model,
-        ...(categories.length > 0 && { schema: categories }) // Only include 'enum' if categories are provided
+        ...(categories.length > 0 && {schema: categories}) // Only include 'enum' if categories are provided
     };
 
     console.log('bodyData', bodyData);
@@ -88,20 +87,29 @@ export default function DocsGenerate() {
         <div className="min-h-screen bg-gray-900 text-gray-300 px-8">
             <div>
                 <h1 className="text-4xl mb-10 text-center font-bold">Docs Generate</h1>
-                <textarea
-                    className="w-full p-2 mb-4 bg-gray-800 text-gray-300"
-                    rows={10}
-                    placeholder="Enter text to categorize"
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                />
                 <input
                     type="text"
                     className="w-full p-2 mb-4 bg-gray-800 text-gray-300"
-                    placeholder="Enter categories (comma-separated)"
+                    placeholder="Enter which type of document need to generate"
                     value={categories}
                     onChange={(e) => setCategories(e.target.value)}
                 />
+                <textarea
+                    className="w-full p-2 mb-4 bg-gray-800 text-gray-300"
+                    rows={10}
+                    placeholder="Enter template of the document to be generated"
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                />
+
+                <textarea
+                    className="w-full p-2 mb-4 bg-gray-800 text-gray-300"
+                    rows={10}
+                    placeholder="Enter the content that must be included in the document"
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                />
+
                 <select
                     className="w-full p-2 mb-4 bg-gray-800 text-gray-300"
                     value={selectedModel}
@@ -117,7 +125,7 @@ export default function DocsGenerate() {
                     className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded"
                     onClick={handleCategorize}
                 >
-                    Summarize
+                    Generate
                 </button>
             </div>
             {categorizationResult && (
