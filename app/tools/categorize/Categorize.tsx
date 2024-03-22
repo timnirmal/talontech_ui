@@ -3,6 +3,7 @@
 import React, {useEffect, useState} from 'react';
 import {createClientComponentClient} from "@supabase/auth-helpers-nextjs";
 import {Database} from "@/types/supabase";
+import Link from 'next/link'; // Importing Link component
 
 // Assuming LLMProps defines the structure of an individual LLM object
 
@@ -83,6 +84,11 @@ export default function Categorize() {
 
     return (
         <div className="min-h-screen bg-gray-900 text-gray-300 px-8">
+            <Link href="/projects/" passHref>
+                <button className="bg-transparent hover:bg-red-500 text-red-500 hover:text-white font-bold py-2 px-4 rounded">
+                    Back
+                </button>
+            </Link>
             <div>
                 <h1 className="text-4xl mb-10 text-center font-bold">Categorize</h1>
                 <textarea
@@ -114,15 +120,16 @@ export default function Categorize() {
                     className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded"
                     onClick={handleCategorize}
                 >
-                    Summarize
+                    Categorize
                 </button>
             </div>
             {categorizationResult && (
                 <div className="mt-4">
-                    <h3 className="mb-2 text-xl">Summarization Result:</h3>
-                    <p>{categorizationResult}</p>
+                    <h3 className="mb-2 text-xl text-white">Category:</h3>
+                    <p className="text-white">{categorizationResult}</p>
                 </div>
             )}
+
         </div>
     );
 }

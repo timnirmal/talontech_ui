@@ -4,6 +4,7 @@
 import React, {useEffect, useState} from 'react';
 import {createClientComponentClient} from "@supabase/auth-helpers-nextjs";
 import {Database} from "@/types/supabase";
+import Link from 'next/link'; // Importing Link component
 
 // Assuming LLMProps defines the structure of an individual LLM object
 
@@ -86,19 +87,24 @@ export default function DataExtract() {
 
     return (
         <div className="min-h-screen bg-gray-900 text-gray-300 px-8">
+             <Link href="/projects/" passHref>
+                <button className="bg-transparent hover:bg-red-500 text-red-500 hover:text-white font-bold py-2 px-4 rounded">
+                    Back
+                </button>
+            </Link>
             <div>
                 <h1 className="text-4xl mb-10 text-center font-bold">Data Extract</h1>
                 <textarea
                     className="w-full p-2 mb-4 bg-gray-800 text-gray-300"
                     rows={10}
-                    placeholder="Enter text to categorize"
+                    placeholder="Enter text to extract data from"
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                 />
                 <input
                     type="text"
                     className="w-full p-2 mb-4 bg-gray-800 text-gray-300"
-                    placeholder="Enter categories (comma-separated)"
+                    placeholder="Enter which data must be extracted (comma-separated)"
                     value={categories}
                     onChange={(e) => setCategories(e.target.value)}
                 />
@@ -117,18 +123,18 @@ export default function DataExtract() {
                     className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded"
                     onClick={handleCategorize}
                 >
-                    Summarize
+                    Extract Data
                 </button>
             </div>
             {categorizationResult && (
                 <div>
                     {categorizationResult.length > 0 && (
                         <div className="mt-4">
-                            <h3 className="mb-2 text-xl">Categorization Results:</h3>
+                            <h3 className="mb-2 text-xl text-white">Extracted Data:</h3>
                             {categorizationResult.map((item, index) => (
                                 <div key={index} className="mb-4">
                                     {Object.entries(item).map(([key, value]) => (
-                                        <p key={key}>{key.replace(/_/g, ' ').charAt(0).toUpperCase() + key.slice(1)}: {value || 'N/A'}</p>
+                                        <p className="text-white" key={key}>{key.replace(/_/g, ' ').charAt(0).toUpperCase() + key.slice(1)}: {value || 'N/A'}</p>
                                     ))}
                                 </div>
                             ))}

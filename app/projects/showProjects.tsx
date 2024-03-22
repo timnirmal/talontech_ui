@@ -14,6 +14,7 @@ export default async function ShowProjects() {
     const [projects, setProjects] = useState([]);
     const [error, setError] = useState(null);
 
+
     const getProfile = useCallback(async () => {
         try {
             setLoading(true)
@@ -47,6 +48,7 @@ export default async function ShowProjects() {
         }
     }, [user, supabase])
 
+
     useEffect(() => {
         getProfile()
     }, [user, getProfile])
@@ -56,7 +58,7 @@ export default async function ShowProjects() {
 
     return (
         <div>
-            <h1>Projects</h1>
+            <h1 className="m-4 text-white">Projects</h1>
             {/*<p>{projects}</p>*/}
             {/*<p>{projects.id}: {projects.email}</p>*/}
             {/*{projects.map((project, index) => (*/}
@@ -64,21 +66,24 @@ export default async function ShowProjects() {
             {/*        <p>{project.id}: {project.name}</p>*/}
             {/*    </div>*/}
             {/*))}*/}
+          
             <div className="flex flex-wrap -mx-4">
                 {projects.map((project) => (
                     <div key={project.id} className="w-full sm:w-1/2 md:w-1/3 lg:w-1/4 p-4">
-                        <Link href={`/projects/${project.id}`} passHref>
-                        <div className="bg-white shadow-md rounded-lg overflow-hidden">
-                            <div className="p-5">
+                    <Link href={`/projects/${project.id}`} passHref>
+                        <div className="bg-white shadow-md rounded-lg overflow-hidden h-40 w-80">
+                            <div className="p-5 h-full">
                                 <h5 className="text-lg font-bold mb-2">{project.name}</h5>
                                 <p className="text-gray-700 text-base">{project.description}</p>
                             </div>
                         </div>
-                        </Link>
-                    </div>
+                    </Link>
+                </div>
+                
                 ))}
             </div>
 
+            
         </div>
     );
 }

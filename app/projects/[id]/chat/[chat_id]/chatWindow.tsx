@@ -605,89 +605,63 @@ export default function ChatWindow({params}: ChatWindowProps) {
 
 
     return (
-        <div className="flex bg-white">
+        <div className="flex bg-gray-600">
             {/* Chat Area */}
-            <div className="flex-1 flex flex-col">
-                <div className="font-bold">Online Users:</div>
-                <div>
-                    {// if onlineUsers is  not empty
-                        onlineUsers.length > 0 &&
-                        onlineUsers.map((user) => (
-                            <div key={user.user_id} className="flex items-center space-x-2">
-                                {/*{console.log("Online Users", onlineUsers)}*/}
-                                <img src={'/profile_image.png'} alt="Stream"
-                                     className="w-8 h-8 rounded-full object-cover"/>
-                                <div>{user.user_id}</div>
-                            </div>
-                        ))}
+
+            <div className="flex-1 flex flex-col p-5">
+                <div className="flex flex-row-reverse space-x-4 mb-10">
+                    <div className="flex justify-end space-x-4 mx-10">
+                        {// if onlineUsers is not empty
+                            onlineUsers.length > 0 &&
+                            onlineUsers.map((user) => (
+                                <div key={user.user_id} className="flex items-center">
+                                    <img src={'/profile_image.png'} alt="Stream"
+                                        className="w-8 h-8 rounded-full object-cover"/>
+                                </div>
+                            ))}
+                    </div>
+
+
+                    <div className="flex items-center space-x-3 py-2">
+                        <div className="font-bold text-xs text-white">Primary LLM:</div>
+                        <select
+                            className="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-40 p-2"
+                            value={selectedLLM}
+                            onChange={(e) => {
+                                setSelectedLLM(e.target.value);
+                                console.log("Primary LLM", e.target.value);
+                            }}
+                        >
+                            {pickedLLM.map((llm) => (
+                                <option key={llm.llm_id} value={llm.llm_id}>{llm.name} - {llm.version}</option>
+                            ))}
+                        </select>
+
+                        <div className="font-bold text-xs text-white">Secondary LLM:</div>
+                        <select
+                            className="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-40 p-2"
+                            value={secondarySelectedLLM}
+                            onChange={(e) => {
+                                setSecondarySelectedLLM(e.target.value);
+                                console.log("Secondary LLM", e.target.value);
+                            }}
+                            disabled={!enableSecondaryLLM}
+                        >
+                            {pickedLLM.map((llm) => (
+                                <option key={llm.llm_id} value={llm.llm_id}>{llm.name} - {llm.version}</option>
+                            ))}
+                        </select>
+
+                        <div className="font-bold text-xs text-white">Enable Secondary:</div>
+                        <button
+                            onClick={() => setEnableSecondaryLLM(!enableSecondaryLLM)}
+                            className={`w-16 h-8 text-xs text-white font-medium py-2 px-4 rounded-lg ${enableSecondaryLLM ? 'bg-green-500' : 'bg-gray-400'}`}
+                        >
+                            {enableSecondaryLLM ? 'ON' : 'OFF'}
+                        </button>
+                    </div>
                 </div>
-                {/*/!*show userDetails*!/*/}
-                {/*<div className="font-bold">User Details:</div>*/}
-                {/*<div>*/}
-                {/*    {// if userDetails is  not empty*/}
-                {/*        userDetails.length > 0 &&*/}
-                {/*        userDetails.map((user) => (*/}
-                {/*            <div key={user.id} className="flex items-center space-x-2">*/}
-                {/*                <img src={'/profile_image.png'} alt="Stream"*/}
-                {/*                     className="w-8 h-8 rounded-full object-cover"/>*/}
-                {/*                <div>{user.username}</div>*/}
-                {/*            </div>*/}
-                {/*        ))}*/}
-                {/*</div>*/}
-                {/*/!*show llmDetails*!/*/}
-                {/*<div className="font-bold">LLM Details:</div>*/}
-                {/*<div>*/}
-                {/*    {// if llmDetails is  not empty*/}
-                {/*        llmDetails.length > 0 &&*/}
-                {/*        llmDetails.map((llm) => (*/}
-                {/*            <div key={llm.llm_id} className="flex items-center space-x-2">*/}
-                {/*                <img src={'/profile_image.png'} alt="Stream"*/}
-                {/*                     className="w-8 h-8 rounded-full object-cover"/>*/}
-                {/*                <div>{llm.name} - {llm.version}</div>*/}
-                {/*            </div>*/}
-                {/*        ))}*/}
-                {/*</div>*/}
-
-                <div className="flex items-center space-x-3 py-2">
-
-                    <div className="font-bold">Primary LLM:</div>
-                    <select
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-40 p-2"
-                        value={selectedLLM}
-                        onChange={(e) => {
-                            setSelectedLLM(e.target.value);
-                            console.log("Primary LLM", e.target.value);
-                        }}
-                    >
-                        {pickedLLM.map((llm) => (
-                            <option key={llm.llm_id} value={llm.llm_id}>{llm.name} - {llm.version}</option>
-                        ))}
-                    </select>
-
-                    <div className="font-bold">Secondary LLM:</div>
-                    <select
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-40 p-2"
-                        value={secondarySelectedLLM}
-                        onChange={(e) => {
-                            setSecondarySelectedLLM(e.target.value);
-                            console.log("Secondary LLM", e.target.value);
-                        }}
-                        disabled={!enableSecondaryLLM}
-                    >
-                        {pickedLLM.map((llm) => (
-                            <option key={llm.llm_id} value={llm.llm_id}>{llm.name} - {llm.version}</option>
-                        ))}
-                    </select>
-
-                    <div className="font-bold">Enable Secondary:</div>
-                    <button
-                        onClick={() => setEnableSecondaryLLM(!enableSecondaryLLM)}
-                        className={`w-16 h-8 text-sm text-white font-medium py-2 px-4 rounded-lg ${enableSecondaryLLM ? 'bg-green-500' : 'bg-gray-400'}`}
-                    >
-                        {enableSecondaryLLM ? 'ON' : 'OFF'}
-                    </button>
-                </div>
-
+                {/* <div className="font-bold">Online Users:</div> */}
 
                 <div className="chat-window">
                     {rootMessageExist ? (
@@ -750,17 +724,27 @@ export default function ChatWindow({params}: ChatWindowProps) {
                 </div>
                 {/*)}*/}
 
-                <div className="flex-1 flex flex-col">
+                <div className="fixed bottom-0 bg-gray-600 w-full border-t border-gray-300 p-3 ">
                     {/* Input for new message text */}
                     <input
                         type="text"
                         value={newMessageText}
                         onChange={(e) => setNewMessageText(e.target.value)}
+                        className="border border-gray-300 text-sm rounded-md px-3 py-2 mr-2 focus:outline-none focus:ring focus:border-blue-300"
+                        style={{ width: 'calc(100% - 40%)' }} // Adjust the width here
                     />
                     {/* Button to add a new message */}
-                    <button onClick={handleSendClick}>Add Message</button>
-                    {/*<button onClick={handleAddClick}>Test Message</button>*/}
+                    <button 
+                        onClick={handleSendClick}
+                        className="py-3 bg-gray-900 text-sm hover:bg-gray-700 text-white font-bold rounded-lg"
+                        style={{ width: '10%' }} // Adjust the width here
+                    >
+                        Add Message
+                    </button>
                 </div>
+
+
+
 
                 {/*show the realLastMessage from localStorage*/}
                 {/*<div>Real lastMessage: {realLastMessage?.text}</div>*/}

@@ -50,13 +50,23 @@ export default function NewProject() {
     };
 
     return (
-        <form action={addTweet}
-              className="flex flex-col items-center justify-center p-5 rounded-lg bg-gray-100 shadow-md">
-            <input name="title" className="w-full p-2 rounded-md border border-gray-300 mb-2 text-lg"/>
-            <input name="description" className="w-full p-2 rounded-md border border-gray-300 mb-2 text-lg"/>
-            <button type="submit" className="bg-blue-500 text-white p-2 rounded-md">
+        <form action={addTweet} className="flex flex-col items-center justify-center p-5 rounded-lg bg-gray-800 shadow-md">
+            <div className="flex flex-col mb-4 w-full">
+                <label for="title" className="text-sm text-white font-semibold text-gray-800 mb-1">Title:</label>
+                <input type="text" id="title" name="title" className="w-full p-2 rounded-md border border-gray-300 mb-2 text-lg focus:outline-none focus:border-blue-500"/>
+            </div>
+        
+            <div className="flex flex-col mb-4 w-full">
+                <label for="description" className="text-sm  text-white font-semibold text-gray-800 mb-1">Description:</label>
+                <textarea id="description" name="description" className="w-full p-2 rounded-md border border-gray-300 mb-2 text-lg h-32 resize-none focus:outline-none focus:border-blue-500"></textarea>
+            </div>
+        
+            <button type="submit" class="bg-gray-500 hover:bg-green-500 text-white p-2 rounded-md">
                 Add Project
             </button>
+
         </form>
+        
+
     );
 }

@@ -13,7 +13,7 @@ export default async function ChatWindowView({params}: { params: { id: string } 
     } = await supabase.auth.getUser()
 
     return (
-        <div>
+        <div >
             <ChatProvider>
                 <ChatWindow params={params}/>
             </ChatProvider>
