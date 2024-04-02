@@ -79,7 +79,8 @@ export default function ChatWindow({params}: ChatWindowProps) {
     const [rootMessage, setRootMessage] = useState(true);
 
     const [onlineUsers, setOnlineUsers] = useState([]); // Use state to hold online users
-
+    const [selectedFiles, setSelectedFiles] = useState([]);
+    const [isAdvancedSearch, setIsAdvancedSearch] = useState(false);
 
     const messagesEndRef = useRef(null)
 
@@ -97,6 +98,8 @@ export default function ChatWindow({params}: ChatWindowProps) {
 
     const [userDetails, setUserDetails] = useState({});
     const [llmDetails, setLLMDetails] = useState({});
+
+    const [ollamaResponse, setOllamaResponse] = useState("");
 
 
     // console.log("params.id", params.chat_id)
@@ -129,7 +132,14 @@ export default function ChatWindow({params}: ChatWindowProps) {
         messages,
         startFetching,
         stopFetching
-    } = useManualServerSentEvents('http://127.0.0.1:9000/chat_model', {message: newMessageText, model: currentLLM});
+    } = useManualServerSentEvents('http://127.0.0.1:9000/chat_model', {
+        message: newMessageText,
+        model: currentLLM,
+        user_id: user.id,
+        chat_id: params.chat_id,
+        files: selectedFiles,
+        advanced_mode: isAdvancedSearch
+    });
 
     // Combine messages and replace '\n\n' with HTML line break '<br /><br />'
     const combinedMessages = useMemo(() => {
@@ -141,8 +151,7 @@ export default function ChatWindow({params}: ChatWindowProps) {
         if (stillStreaming) {
             const llmResponseString = JSON.stringify(llmMessage);
             localStorage.setItem('llmResponse', llmResponseString);
-        }
-        else {
+        } else {
             localStorage.removeItem('llmResponse');
         }
     }, [llmMessage, stillStreaming]);
@@ -308,7 +317,7 @@ export default function ChatWindow({params}: ChatWindowProps) {
     useEffect(() => {
         if (enableSecondaryLLM) {
             setCurrentLLM(secondarySelectedLLM);
-        }else {
+        } else {
             setCurrentLLM(selectedLLM);
         }
     }, [selectedLLM, secondarySelectedLLM, enableSecondaryLLM]);
@@ -511,6 +520,40 @@ export default function ChatWindow({params}: ChatWindowProps) {
 
     };
 
+    const insertNewLLMResponseIntoSupabaseOllama = async (llmResponse, modelUsed) => {
+        // get realLastMessage from localStorage
+        let realLastMessageString = localStorage.getItem('realLastMessage');
+        const theRealLastMessage = JSON.parse(realLastMessageString);
+
+        // get ollamaResponse from localStorage
+        let ollamaResponseString = localStorage.getItem('ollamaResponse');
+        const ollamaResponseStr = JSON.parse(ollamaResponseString);
+
+        console.log("Inserting into Supabase")
+        console.log("chat_id", params.chat_id)
+        console.log("llm_id", modelUsed)
+        console.log("text", ollamaResponseStr)
+        console.log("version", 1)
+        // console.log("previous_message_id", realLastMessage.message_id)
+        console.log("previous_message_id", theRealLastMessage.message_id)
+        // original_message_id -
+        const {data, error} = await supabase
+            .from('chat_message')
+            .insert([
+                {
+                    chat_id: params.chat_id,
+                    llm_id: modelUsed,
+                    text: ollamaResponseStr,
+                    version: 1,
+                    previous_message_id: theRealLastMessage.message_id
+                }
+            ]);
+
+        // if (error) console.error('Error inserting into Supabase:', error);
+        // else console.log('Inserted into Supabase:', data);
+        console.log('Inserted into Supabase:', data);
+    };
+
     const insertNewLLMResponseIntoSupabase = async (llmResponse) => {
         // get realLastMessage from localStorage
         let realLastMessageString = localStorage.getItem('realLastMessage');
@@ -541,6 +584,28 @@ export default function ChatWindow({params}: ChatWindowProps) {
         console.log('Inserted into Supabase:', data);
     };
 
+    const callOllama = async (modelName) => {
+        if (!newMessageText) return;
+
+        console.log("Inserting into Ollama")
+        const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({messages: [{role: "user", content: newMessageText, model: modelName}]}),
+        });
+        // console.log("Ollama Response", res);
+        const data = await res.json();
+        console.log("Ollama Response", data.response);
+        setOllamaResponse(data.response); // Adjust this line based on the structure of your response
+
+        // set local storage for Ollama response
+        const ollamaResponseString = JSON.stringify(data.response);
+        localStorage.setItem('ollamaResponse', ollamaResponseString);
+    };
+
+
     const handleSendClick = async () => {
         // router.push(`/projects/${params.id}/chat/${params.chat_id}`);
 
@@ -554,18 +619,57 @@ export default function ChatWindow({params}: ChatWindowProps) {
         console.log(llmMessage);
         setStillStreaming(true);
         scrollToBottom();
-        await startFetching();
-        console.log("Start fetching Done");
-        console.log(llmMessage);
-        setStillStreaming(false);
-        console.log("Start fetching Done");
-        console.log(llmMessage);
 
-        // get LLM response from localStorage
-        const llmResponseString = localStorage.getItem('llmResponse');
-        const llmResponse = JSON.parse(llmResponseString);
-        if (llmResponse !== "") {
-            await insertNewLLMResponseIntoSupabase(llmResponse);
+        // await insertNewIntoSupabase();
+        // console.log(llmMessage);
+        // setStillStreaming(true);
+        // scrollToBottom();
+        // // await startFetching();
+        // console.log("Start fetching Done");
+        // console.log(llmMessage);
+        // setStillStreaming(false);
+        // console.log("Start fetching Done");
+        // console.log(llmMessage);
+        //
+        // // get LLM response from localStorage
+        // const llmResponseString = localStorage.getItem('llmResponse');
+        // const llmResponse = JSON.parse(llmResponseString);
+        // if (llmResponse !== "") {
+        //     await insertNewLLMResponseIntoSupabase(llmResponse);
+        // }
+        console.log("Start fetching Before choosing");
+        // from supabase get current LLM name
+        const {data, error} = await supabase
+            .from('llm')
+            .select('name')
+            .eq('llm_id', currentLLM)
+            .limit(1);
+
+
+        console.log(data);
+        // get name of from data
+        console.log(data[0].name);
+        if (data[0].name === 'mistral' || data[0].name === 'llama2' || data[0].name === 'gemma') {
+            // call Ollama callOllama
+            await callOllama(data[0].name);
+            console.log("Start fetching Done Ollama");
+            await insertNewLLMResponseIntoSupabaseOllama(ollamaResponse, currentLLM);
+
+        } else {
+            // Proceed with the existing startFetching logic
+            await startFetching();
+            console.log("Start fetching Done");
+            console.log(llmMessage);
+            setStillStreaming(false);
+            console.log("Start fetching Done");
+            console.log(llmMessage);
+
+            // Insert LLM response into Supabase if available
+            const llmResponseString = localStorage.getItem('llmResponse');
+            const llmResponse = JSON.parse(llmResponseString);
+            if (llmResponse !== "") {
+                await insertNewLLMResponseIntoSupabase(llmResponse);
+            }
         }
         setLLMMessage("")
         resetLLMMessages();
@@ -604,147 +708,171 @@ export default function ChatWindow({params}: ChatWindowProps) {
         setEnableSecondaryLLM(!enableSecondaryLLM);
     };
 
+    const toggleSearch = () => {
+        setIsAdvancedSearch(!isAdvancedSearch);
+    };
+
 
     return (
-        <div className="flex bg-gray-500">
+        <div className="flex bg-gray-500 h-screen">
             {/* Chat Area */}
 
-            <div className="flex-1 flex flex-col p-5">
-                <div className="flex flex-row-reverse space-x-4 mb-10">
-                    <div className="flex justify-end space-x-4 mx-10">
-                        {// if onlineUsers is not empty
-                            onlineUsers.length > 0 &&
-                            onlineUsers.map((user) => (
-                                <div key={user.user_id} className="flex items-center">
-                                    <img src={'/profile_image.png'} alt="Stream"
-                                         className="w-8 h-8 rounded-full object-cover"/>
-                                </div>
-                            ))}
-                    </div>
-
-
-                    <div className="flex items-center space-x-3 py-2">
-                        <div className="font-bold text-xs text-white">Primary LLM:</div>
-                        <select
-                            className="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-40 p-2"
-                            value={selectedLLM}
-                            onChange={(e) => {
-                                setSelectedLLM(e.target.value);
-                                console.log("Primary LLM", e.target.value);
-                            }}
-                        >
-                            {pickedLLM.map((llm) => (
-                                <option key={llm.llm_id} value={llm.llm_id}>{llm.name} - {llm.version}</option>
-                            ))}
-                        </select>
-
-                        <div className="font-bold text-xs text-white">Secondary LLM:</div>
-                        <select
-                            className="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-40 p-2"
-                            value={secondarySelectedLLM}
-                            onChange={(e) => {
-                                setSecondarySelectedLLM(e.target.value);
-                                console.log("Secondary LLM", e.target.value);
-                            }}
-                            disabled={!enableSecondaryLLM}
-                        >
-                            {pickedLLM.map((llm) => (
-                                <option key={llm.llm_id} value={llm.llm_id}>{llm.name} - {llm.version}</option>
-                            ))}
-                        </select>
-
-                        <div className="font-bold text-xs text-white">Enable Secondary:</div>
-                        <button
-                            onClick={() => setEnableSecondaryLLM(!enableSecondaryLLM)}
-                            className={`w-16 h-8 text-xs text-white font-medium py-2 px-4 rounded-lg ${enableSecondaryLLM ? 'bg-green-500' : 'bg-gray-400'}`}
-                        >
-                            {enableSecondaryLLM ? 'ON' : 'OFF'}
-                        </button>
-                    </div>
-                </div>
-                {/* <div className="font-bold">Online Users:</div> */}
-
-                <div className="chat-window">
-                    {rootMessageExist ? (
-                        <div>
-                            {/* Placeholder for when rootMessageExist is true. You can add your single component code here. */}
-                            <div>Your component or content for the root message</div>
-                            {/*    show chatdata*/}
-                            <div>
-                                {chatData.map((message) => (
-                                    <div key={message.message_id} className="flex items-start space-x-2 mb-4">
+            <div className="flex-1  py-5 overflow-y-auto  pb-44 scroll-auto">
+                <div className="px-5">
+                    <div className="flex flex-row-reverse space-x-4 mb-10">
+                        <div className="flex justify-end space-x-4 mx-10">
+                            {// if onlineUsers is not empty
+                                onlineUsers.length > 0 &&
+                                onlineUsers.map((user) => (
+                                    <div key={user.user_id} className="flex items-center">
                                         <img src={'/profile_image.png'} alt="Stream"
-                                             className="w-10 h-10 rounded-full object-cover"/>
-                                        <div className="flex flex-col rounded bg-gray-100 p-2 shadow">
-                                            <div className="font-bold">{message.user_id}</div>
-                                            <div className="message-content">{message.text}</div>
-                                        </div>
+                                             className="w-8 h-8 rounded-full object-cover"/>
                                     </div>
                                 ))}
-                            </div>
                         </div>
-                    ) : (
-                        <div>
-                            {/*<button onClick={toggle}>Toggle</button>*/}
-                            {/* Conditional rendering based on the existence of messageTree */}
-                            {messageTree && userDetails?.length > 0 && llmDetails?.length > 0 ? (
+
+
+                        <div className="flex items-center space-x-3 py-2">
+                            <div className="font-bold text-xs text-white">Primary LLM:</div>
+                            <select
+                                className="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-40 p-2"
+                                value={selectedLLM}
+                                onChange={(e) => {
+                                    setSelectedLLM(e.target.value);
+                                    console.log("Primary LLM", e.target.value);
+                                }}
+                            >
+                                {pickedLLM.map((llm) => (
+                                    <option key={llm.llm_id} value={llm.llm_id}>{llm.name} - {llm.version}</option>
+                                ))}
+                            </select>
+
+                            <div className="font-bold text-xs text-white">Secondary LLM:</div>
+                            <select
+                                className="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-40 p-2"
+                                value={secondarySelectedLLM}
+                                onChange={(e) => {
+                                    setSecondarySelectedLLM(e.target.value);
+                                    console.log("Secondary LLM", e.target.value);
+                                }}
+                                disabled={!enableSecondaryLLM}
+                            >
+                                {pickedLLM.map((llm) => (
+                                    <option key={llm.llm_id} value={llm.llm_id}>{llm.name} - {llm.version}</option>
+                                ))}
+                            </select>
+
+                            <div className="font-bold text-xs text-white">Enable Secondary:</div>
+                            <button
+                                onClick={() => setEnableSecondaryLLM(!enableSecondaryLLM)}
+                                className={`w-16 h-8 text-xs text-white font-medium py-2 px-4 rounded-lg ${enableSecondaryLLM ? 'bg-green-500' : 'bg-gray-400'}`}
+                            >
+                                {enableSecondaryLLM ? 'ON' : 'OFF'}
+                            </button>
+                        </div>
+                    </div>
+                    {/* <div className="font-bold">Online Users:</div> */}
+
+                    <div className="chat-window">
+                        {rootMessageExist ? (
+                            <div>
+                                {/* Placeholder for when rootMessageExist is true. You can add your single component code here. */}
+                                {/*<div>Your component or content for the root message</div>*/}
+                                {/*    show chatdata*/}
                                 <div>
-                                    {/*{console.log("Root Message", rootMessageExist)}*/}
-                                    <MessageComponent
-                                        node={messageTree}
-                                        currentMessage={currentMessage}
-                                        lastMessageRef={lastMessageRef}
-                                        setCurrentMessage={updateCurrentMessage}
-                                        doesStateChange={doesStateChange}
-                                        setDoesStateChange={updateDoesStateChange}
-                                        userDetails={userDetails}
-                                        llmDetails={llmDetails}
-                                    />
+                                    {chatData.map((message) => (
+                                        <div key={message.message_id} className="flex items-start space-x-2 mb-4">
+                                            <img src={'/profile_image.png'} alt="Stream"
+                                                 className="w-10 h-10 rounded-full object-cover"/>
+                                            <div className="flex flex-col rounded bg-gray-100 p-2 shadow">
+                                                <div className="font-bold">{message.user_id}</div>
+                                                <div className="message-content">{message.text}</div>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                            ) : (
-                                <div>
-                                    {/*{console.log("Root Message", rootMessageExist)}*/}
-                                    <p>No messages to display</p>
+                            </div>
+                        ) : (
+                            <div>
+                                {/*<button onClick={toggle}>Toggle</button>*/}
+                                {/* Conditional rendering based on the existence of messageTree */}
+                                {messageTree && userDetails?.length > 0 && llmDetails?.length > 0 ? (
+                                    <div>
+                                        {/*{console.log("Root Message", rootMessageExist)}*/}
+                                        <MessageComponent
+                                            node={messageTree}
+                                            currentMessage={currentMessage}
+                                            lastMessageRef={lastMessageRef}
+                                            setCurrentMessage={updateCurrentMessage}
+                                            doesStateChange={doesStateChange}
+                                            setDoesStateChange={updateDoesStateChange}
+                                            userDetails={userDetails}
+                                            llmDetails={llmDetails}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div>
+                                        {/*{console.log("Root Message", rootMessageExist)}*/}
+                                        {/*<p>No messages to display</p>*/}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+
+                    {stillStreaming && (
+                        <div className="stream message">
+                            <div className="flex items-start space-x-2 mb-4">
+                                <img src={'/profile_image.png'} alt="Stream"
+                                     className="w-10 h-10 rounded-full object-cover"/>
+                                <div className="flex flex-col rounded bg-gray-100 p-2 shadow">
+                                    <div className="font-bold">{"Stream"}</div>
+                                    <div className="stream-content" dangerouslySetInnerHTML={{__html: llmMessage}}/>
                                 </div>
-                            )}
+                            </div>
                         </div>
                     )}
                 </div>
 
+                {/*Input Bar*/}
+                <div className="fixed bottom-0 bg-gray-600 w-4/5 border-t border-gray-300 p-3 ">
 
-                {/*{stillStreaming && (*/}
-                <div className="stream message">
-                    <div className="flex items-start space-x-2 mb-4">
-                        <img src={'/profile_image.png'} alt="Stream"
-                             className="w-10 h-10 rounded-full object-cover"/>
-                        <div className="flex flex-col rounded bg-gray-100 p-2 shadow">
-                            <div className="font-bold">{"Stream"}</div>
-                            <div className="stream-content" dangerouslySetInnerHTML={{__html: llmMessage}}/>
-                        </div>
-                    </div>
-                </div>
-                {/*)}*/}
-                <div className="fixed bottom-0 bg-gray-600 w-full border-t border-gray-300 p-3 ">
                     {/* Input for new message text */}
-                    <ShowFilesChat params={params} />
-                    <input
-                        type="text"
+                    <ShowFilesChat params={params} selectedFiles={selectedFiles} setSelectedFiles={setSelectedFiles}/>
+
+                    {/*<input*/}
+                    {/*    type="text"*/}
+                    {/*    value={newMessageText}*/}
+                    {/*    onChange={(e) => setNewMessageText(e.target.value)}*/}
+                    {/*    className="border border-gray-300 text-sm rounded-md px-3 py-2 mr-2 focus:outline-none focus:ring focus:border-blue-300"*/}
+                    {/*    style={{width: 'calc(100% - 40%)'}} // Adjust the width here*/}
+                    {/*/>*/}
+                    <textarea
                         value={newMessageText}
                         onChange={(e) => setNewMessageText(e.target.value)}
-                        className="border border-gray-300 text-sm rounded-md px-3 py-2 mr-2 focus:outline-none focus:ring focus:border-blue-300"
-                        style={{ width: 'calc(100% - 40%)' }} // Adjust the width here
-                    />
-                    {/* Button to add a new message */}
-                    <button
-                        onClick={handleSendClick}
-                        className="py-3 bg-gray-900 text-sm hover:bg-gray-700 text-white font-bold rounded-lg"
-                        style={{ width: '10%' }} // Adjust the width here
-                    >
-                        Add Message
-                    </button>
+                        className="border w-full border-gray-300 text-sm rounded-md px-3 py-2 mr-2 focus:outline-none focus:ring focus:border-blue-300"
+                        placeholder="Type your message..."
+                        rows={5}
+                    ></textarea>
+                    <div className="flex justify-end items-center space-x-2">
+                        <button
+                            onClick={toggleSearch}
+                            className={`transition-colors duration-300 text-white font-bold py-2 px-4 rounded-lg ${
+                                isAdvancedSearch ? 'bg-green-500 hover:bg-green-700' : 'bg-gray-500 hover:bg-gray-700'
+                            }`}
+                        >
+                            {isAdvancedSearch ? 'Advanced Search' : 'Advanced Search'}
+                        </button>
+                        {/* Button to add a new message */}
+                        <button
+                            onClick={handleSendClick}
+                            className="py-3 bg-gray-900 text-sm hover:bg-gray-700 text-white font-bold rounded-lg px-4 "
+                        >
+                            Get Response
+                        </button>
+                    </div>
                 </div>
-
-
 
 
                 {/*show the realLastMessage from localStorage*/}
@@ -755,7 +883,6 @@ export default function ChatWindow({params}: ChatWindowProps) {
                 {/*<ChatStream/>*/}
 
                 <div style={{marginBottom: 100}} ref={messagesEndRef}/>
-
 
             </div>
         </div>

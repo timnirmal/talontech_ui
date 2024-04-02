@@ -20,6 +20,14 @@ export const useManualServerSentEvents = (url: string, body: any, headers?: Head
         setController(newController);
         const signal = newController.signal;
 
+        console.log("body", body);
+        console.log("body", body);
+        console.log("body", body);
+        console.log("body", body);
+        console.log("body", body);
+        console.log("body", body);
+        console.log("body", body);
+
         // Return a new promise that will be resolved when the stream ends
         return new Promise(async (resolve, reject) => {
             try {

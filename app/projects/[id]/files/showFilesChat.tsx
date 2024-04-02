@@ -6,7 +6,7 @@ import {createClientComponentClient} from "@supabase/auth-helpers-nextjs";
 import {Database} from "@/types/supabase";
 import FileModal from "@/app/projects/[id]/files/fileModal";
 
-export default function ShowFilesChat({params}: { params: { id: string } }) {
+export default function ShowFilesChat({params, selectedFiles, setSelectedFiles}) {
     const {accessToken} = useContext(AuthContext);
     const supabase = createClientComponentClient<Database>();
     const [loading, setLoading] = useState(true);
@@ -17,7 +17,6 @@ export default function ShowFilesChat({params}: { params: { id: string } }) {
     const [isEditingFileName, setIsEditingFileName] = useState(false);
     const [editedFileName, setEditedFileName] = useState("");
     const [notFoundFiles, setNotFoundFiles] = useState([]);
-    const [selectedFiles, setSelectedFiles] = useState([]);
     const [isSelectFilesModalOpen, setIsSelectFilesModalOpen] = useState(false);
 
 
@@ -197,7 +196,7 @@ export default function ShowFilesChat({params}: { params: { id: string } }) {
                             onClick={() => handleFileSelectionToggle(file.file_id)}
                             className={`p-2 text-white rounded ${file.isSelected ? 'bg-green-500' : 'bg-gray-500'}`}
                         >
-                            {file.file_name} - {file.file_name}
+                            {file.file_name}
                         </button>
                     </div>
                 ))}

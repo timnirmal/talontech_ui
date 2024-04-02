@@ -72,10 +72,7 @@ export default function FileModal({
                     </div>
                     <br/>
                     <div className="text-lg">
-                        Have you ever noticed the busiest people reply the quickest? Instead of trying to play the game,
-                        like waiting five, 10 minutes to text them back, super busy people don't have time for that.
-                        They'll just ping you the second they get a text or they'll take three days. It's one or the
-                        other.
+                        {currentFile.extracted_data}
                     </div>
                 </div>
             </div>
