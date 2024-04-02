@@ -19,7 +19,7 @@ async function fetchCategorization(text: string, model: string, categories: stri
         ...(categories.length > 0 && { enum: categories }) // Only include 'enum' if categories are provided
     };
 
-    const response = await fetch('http://127.0.0.1:8000/categorize', {
+    const response = await fetch('http://127.0.0.1:9000/categorize', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

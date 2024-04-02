@@ -14,6 +14,8 @@ interface LLMProps {
 
 async function fetchCategorization(text: string, model: string, categories: string[]) {
     const bodyData = {
+        type,
+        template,
         text,
         model,
         ...(categories.length > 0 && {schema: categories}) // Only include 'enum' if categories are provided
@@ -21,7 +23,7 @@ async function fetchCategorization(text: string, model: string, categories: stri
 
     console.log('bodyData', bodyData);
 
-    const response = await fetch('http://127.0.0.1:8000/extract_data', {
+    const response = await fetch('http://127.0.0.1:9000/extract_data', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

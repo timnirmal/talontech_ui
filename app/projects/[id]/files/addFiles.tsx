@@ -5,6 +5,7 @@ import {cookies} from "next/headers";
 import {Database} from "@/types/supabase";
 import AddFilesIcon from "@/app/projects/[id]/chat/addFilesIcon";
 import {useState} from "react";
+
 // import {useRef} from "react";
 
 interface NewFilesProps {
@@ -66,36 +67,35 @@ export default function NewFiles({pageId, mode = "full"}: NewFilesProps) {
                         extension: file.name.split('.').pop(),
                     }).select();
                     console.log("b", b);
+
+                    const fileId = b.data[0].file_id;
+                    console.log("fileId", fileId);
+
                 }
             }
         }
         setState("idle")
 
     };
-    //
-    // const fileInputRef = useRef(null);
-    //
-    // const triggerFileInput = () => {
-    //     // Trigger the file input click event
-    //     fileInputRef.current.click();
-    // };
+
 
     if (mode === "full") {
         return (
             <div>
-            <form action={addFiles}
-                  className="flex flex-col items-center justify-center p-5 rounded-lg bg-gray-100 shadow-md">
-                <input type="file" name="projectFile" className="w-full p-2 rounded-md border border-gray-300 mb-2"/>
-                <button type="submit" className="bg-blue-500 text-white p-2 rounded-md">
-                    Add File
-                </button>
-            </form>
+                <form action={addFiles}
+                      className="flex flex-col items-center justify-center p-5 rounded-lg bg-gray-100 shadow-md">
+                    <input type="file" name="projectFile"
+                           className="w-full p-2 rounded-md border border-gray-300 mb-2"/>
+                    <button type="submit" className="bg-blue-500 text-white p-2 rounded-md">
+                        Add File
+                    </button>
+                </form>
             </div>
         );
     } else {
         return (
             <div>
-                <AddFilesIcon pageId={pageId} mode="icon"/>
+                <AddFilesIcon pageId={pageId} onUploadSuccess={addFiles}/>
             </div>
         )
     }

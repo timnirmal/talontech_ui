@@ -6,7 +6,7 @@ import {createClientComponentClient} from "@supabase/auth-helpers-nextjs";
 import {Database} from "@/types/supabase";
 import FileModal from "@/app/projects/[id]/files/fileModal";
 
-export default function ShowFiles({params}: { params: { id: string } }) {
+export default function ShowFilesChat({params}: { params: { id: string } }) {
     const {accessToken} = useContext(AuthContext);
     const supabase = createClientComponentClient<Database>();
     const [loading, setLoading] = useState(true);
@@ -17,6 +17,9 @@ export default function ShowFiles({params}: { params: { id: string } }) {
     const [isEditingFileName, setIsEditingFileName] = useState(false);
     const [editedFileName, setEditedFileName] = useState("");
     const [notFoundFiles, setNotFoundFiles] = useState([]);
+    const [selectedFiles, setSelectedFiles] = useState([]);
+    const [isSelectFilesModalOpen, setIsSelectFilesModalOpen] = useState(false);
+
 
     // Function to open the modal with the selected file's details
     const openModal = (file) => {
@@ -42,7 +45,8 @@ export default function ShowFiles({params}: { params: { id: string } }) {
 
     const getPreviewContent = (file) => {
         if (file.type.startsWith('image')) {
-            return <img src={file.previewUrl || getFileTypeImage['default']} alt="File preview" className="mb-2 max-w-full h-auto rounded"/>;
+            return <img src={file.previewUrl || getFileTypeImage['default']} alt="File preview"
+                        className="mb-2 max-w-full h-auto rounded"/>;
         } else if (file.type === 'application/pdf') {
             // Here you can return a PDF viewer component or a PDF icon
             return <img src={getFileTypeImage['pdf']} alt="PDF preview" className="mb-2 max-w-full h-auto rounded"/>;
@@ -53,7 +57,8 @@ export default function ShowFiles({params}: { params: { id: string } }) {
         // Add more conditions for other file types as needed
         else {
             // Default placeholder for unsupported types
-            return <img src={getFileTypeImage['default']} alt="File preview" className="mb-2 max-w-full h-auto rounded"/>;
+            return <img src={getFileTypeImage['default']} alt="File preview"
+                        className="mb-2 max-w-full h-auto rounded"/>;
         }
     };
 
@@ -169,6 +174,57 @@ export default function ShowFiles({params}: { params: { id: string } }) {
     //     setFiles(currentFiles => currentFiles.filter(file => file.file_id !== fileId));
     // };
 
+    const FileSelectionModal = ({isOpen, onClose, files, onSelectionChange}) => {
+        if (!isOpen) return null;
+
+        const handleFileSelectionToggle = (fileId) => {
+            // Find the file in the files array
+            const file = files.find(file => file.file_id === fileId);
+            if (file) {
+                // Toggle its isSelected state and call onSelectionChange
+                onSelectionChange(fileId, !file.isSelected);
+            }
+
+            console.log("selectedFiles", selectedFiles);
+        };
+
+        return (
+            <div className="modal">
+                {/* Modal content */}
+                {files.map(file => (
+                    <div key={file.file_id} className="mb-2">
+                        <button
+                            onClick={() => handleFileSelectionToggle(file.file_id)}
+                            className={`p-2 text-white rounded ${file.isSelected ? 'bg-green-500' : 'bg-gray-500'}`}
+                        >
+                            {file.file_name} - {file.file_name}
+                        </button>
+                    </div>
+                ))}
+                {/*<button onClick={onClose} className="mt-4 p-2 bg-blue-500 text-white rounded">Close</button>*/}
+            </div>
+        );
+    };
+
+
+    const handleFileSelectionChange = (fileId, isSelected) => {
+        // Check if the fileId already exists in the selectedFiles array
+        if (selectedFiles.includes(fileId)) {
+            // If it does, remove it (toggle off)
+            setSelectedFiles(selectedFiles.filter(id => id !== fileId));
+        } else {
+            // If it doesn't, add it (toggle on)
+            setSelectedFiles([...selectedFiles, fileId]);
+        }
+    };
+
+    // Mark files as selected or not before passing to modal
+    const filesWithSelectionState = files.map(file => ({
+        ...file,
+        isSelected: selectedFiles.includes(file.file_id),
+    }));
+
+
     useEffect(() => {
         getFiles();
     }, [getFiles]);
@@ -178,39 +234,59 @@ export default function ShowFiles({params}: { params: { id: string } }) {
 
     return (
         <div>
-            <h1>Files</h1>
-            <div className="flex flex-wrap -mx-4">
-                {files.map((file) => (
-                    <div key={file.file_id} className="w-full sm:w-1/2 md:w-1/3 lg:w-1/4 p-4"
-                         onClick={() => {
-                             setCurrentFile(file);
-                             setIsModalOpen(true);
-                         }}>
-                        <div className="bg-white shadow-md rounded-lg overflow-hidden">
-                            <div className="p-5">
-                                <img
-                                    src={file.previewUrl || getFileTypeImage['default']}
-                                    alt="File preview"
-                                    className="mb-2 max-w-full h-auto rounded"
-                                    // onError={() => handleImageError(file.file_id)}
-                                />
-                                <h5 className="text-lg font-bold mb-2">{file.file_name}</h5>
-                                <p className="text-gray-700 text-base mb-2">{file.description}</p>
-                                {/* Prevent event propagation to avoid opening modal when clicking the delete button */}
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        deleteFile(file.file_id, file.file_name, e);
-                                    }}
-                                    className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
-                                >
-                                    Delete
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+
+            <div>
+                <h2>Selected Files</h2>
+                {filesWithSelectionState.filter(file => file.isSelected).map(file => (
+                    <div key={file.file_id}>{file.file_name}</div>
                 ))}
+                {/*<h2>Other Files</h2>*/}
+                {/*{filesWithSelectionState.filter(file => !file.isSelected).map(file => (*/}
+                {/*    <div key={file.file_id}>{file.file_name}</div>*/}
+                {/*))}*/}
             </div>
+            {isSelectFilesModalOpen && (
+                <FileSelectionModal
+                    isOpen={isSelectFilesModalOpen}
+                    onClose={() => setIsSelectFilesModalOpen(false)}
+                    files={files}
+                    onSelectionChange={handleFileSelectionChange}
+                />
+            )}
+
+
+            {/*<div className="flex flex-wrap -mx-4">*/}
+            {/*    {files.map((file) => (*/}
+            {/*        <div key={file.file_id} className="w-full sm:w-1/2 md:w-1/3 lg:w-1/4 p-4"*/}
+            {/*             onClick={() => {*/}
+            {/*                 setCurrentFile(file);*/}
+            {/*                 setIsModalOpen(true);*/}
+            {/*             }}>*/}
+            {/*            <div className="bg-white shadow-md rounded-lg overflow-hidden">*/}
+            {/*                <div className="p-5">*/}
+            {/*                    <img*/}
+            {/*                        src={file.previewUrl || getFileTypeImage['default']}*/}
+            {/*                        alt="File preview"*/}
+            {/*                        className="mb-2 max-w-full h-auto rounded"*/}
+            {/*                        // onError={() => handleImageError(file.file_id)}*/}
+            {/*                    />*/}
+            {/*                    <h5 className="text-lg font-bold mb-2">{file.file_name}</h5>*/}
+            {/*                    <p className="text-gray-700 text-base mb-2">{file.description}</p>*/}
+            {/*                    /!* Prevent event propagation to avoid opening modal when clicking the delete button *!/*/}
+            {/*                    <button*/}
+            {/*                        onClick={(e) => {*/}
+            {/*                            e.stopPropagation();*/}
+            {/*                            deleteFile(file.file_id, file.file_name, e);*/}
+            {/*                        }}*/}
+            {/*                        className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"*/}
+            {/*                    >*/}
+            {/*                        Delete*/}
+            {/*                    </button>*/}
+            {/*                </div>*/}
+            {/*            </div>*/}
+            {/*        </div>*/}
+            {/*    ))}*/}
+            {/*</div>*/}
             {notFoundFiles.length > 0 && (
                 <div className="text-red-500">
                     <p>The following files could not be found:</p>
@@ -224,11 +300,19 @@ export default function ShowFiles({params}: { params: { id: string } }) {
 
 
             {isModalOpen && currentFile && (
-                <FileModal currentFile={currentFile} setIsEditingFileName={setIsEditingFileName} setEditedFileName={setEditedFileName}
-                            isEditingFileName={isEditingFileName} editedFileName={editedFileName} editFileName={editFileName}
-                            closeModal={closeModal} getFileTypeImage={getFileTypeImage}/>
+                <FileModal currentFile={currentFile} setIsEditingFileName={setIsEditingFileName}
+                           setEditedFileName={setEditedFileName}
+                           isEditingFileName={isEditingFileName} editedFileName={editedFileName}
+                           editFileName={editFileName}
+                           closeModal={closeModal} getFileTypeImage={getFileTypeImage}/>
             )}
-
+            <button onClick={() => setIsSelectFilesModalOpen(prevState => !prevState)}>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5}
+                     stroke="currentColor" className="w-6 h-6">
+                    <path strokeLinecap="round" strokeLinejoin="round"
+                          d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32m.009-.01-.01.01m5.699-9.941-7.81 7.81a1.5 1.5 0 0 0 2.112 2.13"/>
+                </svg>
+            </button>
         </div>
     );
 }

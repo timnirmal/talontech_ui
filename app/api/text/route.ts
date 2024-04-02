@@ -57,7 +57,7 @@ export async function POST(request: Request, response: Response) {
         };
 
 
-        const res = await fetch(`http://127.0.0.1:8000/textToImage`, {
+        const res = await fetch(`http://127.0.0.1:9000/textToImage`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

@@ -13,6 +13,7 @@ import {useChat} from './ChatContext';
 import {MessageNode} from "@/app/projects/[id]/chat/[chat_id]/messageNode";
 import {useRouter} from "next/navigation";
 import MessageComponent from "@/app/projects/[id]/chat/[chat_id]/ChatComponent";
+import ShowFilesChat from "@/app/projects/[id]/files/showFilesChat";
 
 interface MessageComponentProps {
     node: MessageNode;
@@ -128,7 +129,7 @@ export default function ChatWindow({params}: ChatWindowProps) {
         messages,
         startFetching,
         stopFetching
-    } = useManualServerSentEvents('http://127.0.0.1:8000/chat_model', {message: newMessageText, model: currentLLM});
+    } = useManualServerSentEvents('http://127.0.0.1:9000/chat_model', {message: newMessageText, model: currentLLM});
 
     // Combine messages and replace '\n\n' with HTML line break '<br /><br />'
     const combinedMessages = useMemo(() => {
@@ -723,9 +724,9 @@ export default function ChatWindow({params}: ChatWindowProps) {
                     </div>
                 </div>
                 {/*)}*/}
-
                 <div className="fixed bottom-0 bg-gray-600 w-full border-t border-gray-300 p-3 ">
                     {/* Input for new message text */}
+                    <ShowFilesChat params={params} />
                     <input
                         type="text"
                         value={newMessageText}

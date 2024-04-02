@@ -13,7 +13,7 @@ interface LLMProps {
 }
 
 async function fetchSummarization(text: string, model: string) {
-    const response = await fetch('http://127.0.0.1:8000/summerize', {
+    const response = await fetch('http://127.0.0.1:9000/summerize', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

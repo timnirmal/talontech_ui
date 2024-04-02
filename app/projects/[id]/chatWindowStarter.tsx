@@ -133,7 +133,7 @@ export default function ChatWindowStarter({params}: { params: { id: string } }) 
         messages,
         startFetching,
         stopFetching
-    } = useManualServerSentEvents('http://127.0.0.1:8000/chat_model', {message: messageText});
+    } = useManualServerSentEvents('http://127.0.0.1:9000/chat_model', {message: messageText});
 
     // Combine messages and replace '\n\n' with HTML line break '<br /><br />'
     const combinedMessages = useMemo(() => {
